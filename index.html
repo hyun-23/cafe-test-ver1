@@ -1,0 +1,2268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>카페 원가 & 레시피 스마트 관리 시스템</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .dropdown-item.selected { background-color: #fef3c7 !important; color: #78350f !important; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- 상단 헤더 -->
+  <header class="bg-amber-900 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-amber-700 p-2.5 rounded-xl shadow-inner">
+          <i class="fa-solid fa-mug-saucer text-2xl text-amber-200"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">카페 원가 & 레시피 스마트 관리 시스템</h1>
+          <p class="text-xs text-amber-200">원재료명 입력칸 찌그러짐 방지 및 반응형 보완 완료</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="exportToExcel()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-3 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm font-bold">
+          <i class="fa-solid fa-file-excel"></i> 엑셀 내보내기
+        </button>
+        <button onclick="exportJSON()" class="bg-amber-800 hover:bg-amber-700 text-amber-100 text-xs px-3 py-2 rounded-lg transition flex items-center gap-1.5 border border-amber-700">
+          <i class="fa-solid fa-download"></i> 데이터 백업
+        </button>
+        <label class="bg-amber-800 hover:bg-amber-700 text-amber-100 text-xs px-3 py-2 rounded-lg transition flex items-center gap-1.5 border border-amber-700 cursor-pointer">
+          <i class="fa-solid fa-upload"></i> 불러오기
+          <input type="file" accept=".json" onchange="importJSON(event)" class="hidden">
+        </label>
+        <button onclick="resetData()" class="bg-red-900/40 hover:bg-red-900/60 text-red-200 text-xs px-2.5 py-2 rounded-lg transition border border-red-800/50" title="초기화">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 네비게이션 탭 -->
+  <div class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto space-x-2 py-2">
+      <button onclick="switchTab('recipes-view')" id="tab-recipes-view" class="tab-btn active px-4 py-2.5 text-sm font-semibold rounded-lg transition flex items-center gap-2 whitespace-nowrap bg-amber-100 text-amber-900">
+        <i class="fa-solid fa-book-open text-amber-800"></i> 📖 전체 메뉴 레시피
+      </button>
+      <button onclick="switchTab('recipe-editor')" id="tab-recipe-editor" class="tab-btn px-4 py-2.5 text-sm font-semibold rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+        <i class="fa-solid fa-calculator"></i> 레시피 신규 작성
+      </button>
+      <button onclick="switchTab('sub-recipes')" id="tab-sub-recipes" class="tab-btn px-4 py-2.5 text-sm font-semibold rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+        <i class="fa-solid fa-flask text-amber-700"></i> 수제 베이스 / 서브 레시피
+      </button>
+      <button onclick="switchTab('ingredients')" id="tab-ingredients" class="tab-btn px-4 py-2.5 text-sm font-semibold rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+        <i class="fa-solid fa-boxes-stacked"></i> 원재료 & 부자재
+      </button>
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2.5 text-sm font-semibold rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+        <i class="fa-solid fa-chart-pie"></i> 대시보드 & 원가표
+      </button>
+      <button onclick="switchTab('delivery')" id="tab-delivery" class="tab-btn px-4 py-2.5 text-sm font-semibold rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+        <i class="fa-solid fa-motorcycle text-amber-600"></i> 배달 4사 마진 비교
+      </button>
+      <button onclick="switchTab('order-calc')" id="tab-order-calc" class="tab-btn px-4 py-2.5 text-sm font-semibold rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+        <i class="fa-solid fa-receipt text-emerald-600"></i> 주문 건별 복합 메뉴 마진 정산
+      </button>
+    </div>
+  </div>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+    <!-- TAB 1: 전체 레시피 한눈에 보기 -->
+    <div id="view-recipes-view" class="tab-content space-y-6">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+        
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-1 border-r border-slate-200 pr-3">
+            <span class="text-xs font-bold text-slate-500 whitespace-nowrap"><i class="fa-solid fa-store"></i> 가격 기준:</span>
+            <button onclick="setPriceMode('ALL')" id="price-mode-ALL" class="price-mode-btn px-3 py-1 text-xs font-bold rounded-lg bg-amber-800 text-white">전체</button>
+            <button onclick="setPriceMode('STORE')" id="price-mode-STORE" class="price-mode-btn px-3 py-1 text-xs font-medium rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">🏪 매장</button>
+            <button onclick="setPriceMode('DELIVERY')" id="price-mode-DELIVERY" class="price-mode-btn px-3 py-1 text-xs font-medium rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">🛵 배달</button>
+          </div>
+
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+            <button onclick="filterOverviewCat('ALL')" id="ov-filter-ALL" class="ov-filter-btn px-3 py-1 text-xs font-bold rounded-full bg-amber-800 text-white">전체 보기</button>
+            <button onclick="filterOverviewCat('커피')" id="ov-filter-커피" class="ov-filter-btn px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">☕ 커피</button>
+            <button onclick="filterOverviewCat('논커피')" id="ov-filter-논커피" class="ov-filter-btn px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">🥛 논커피</button>
+            <button onclick="filterOverviewCat('디저트')" id="ov-filter-디저트" class="ov-filter-btn px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">🍰 디저트</button>
+            <button onclick="filterOverviewCat('샌드위치/브런치')" id="ov-filter-샌드위치/브런치" class="ov-filter-btn px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">🥪 샌드위치</button>
+            <button onclick="filterOverviewCat('세트')" id="ov-filter-세트" class="ov-filter-btn px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">🍱 세트</button>
+            <button onclick="filterOverviewCat('기타')" id="ov-filter-기타" class="ov-filter-btn px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200">🍪 기타</button>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <div class="relative w-full md:w-64">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+            <input type="text" id="recipe-search-kw" oninput="renderRecipesOverview()" placeholder="메뉴명 또는 재료명 검색..." class="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-amber-600">
+          </div>
+          <button onclick="openNewRecipeModal()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1">
+            <i class="fa-solid fa-plus"></i> 레시피 추가
+          </button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="recipes-overview-container"></div>
+    </div>
+
+    <!-- TAB 2: 레시피 작성 -->
+    <div id="view-recipe-editor" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-4 mb-6">
+          <h2 class="text-base font-bold text-slate-800"><i class="fa-solid fa-pen-to-square text-amber-700"></i> 레시피 상세 등록/수정</h2>
+          <button onclick="switchTab('recipes-view')" class="text-xs text-slate-500 border border-slate-300 px-3 py-1.5 rounded-lg">목록으로 돌아가기</button>
+        </div>
+
+        <form id="recipe-form" onsubmit="saveRecipe(event)" class="space-y-6">
+          <input type="hidden" id="recipe-id">
+          <input type="hidden" id="recipe-order">
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">메뉴명 *</label>
+              <input type="text" id="recipe-name" required placeholder="예: 카페라떼" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">카테고리 *</label>
+              <select id="recipe-category" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                <option value="커피">☕ 커피</option>
+                <option value="논커피">🥛 논커피</option>
+                <option value="디저트">🍰 디저트</option>
+                <option value="샌드위치/브런치">🥪 샌드위치/브런치</option>
+                <option value="세트">🍱 세트 메뉴</option>
+                <option value="기타">🍪 기타</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-amber-900 mb-1">🏪 매장 판매가 (원) *</label>
+              <input type="text" id="recipe-price" required placeholder="5000" oninput="calculateRecipeTotals()" class="plus-shortcut w-full text-xs p-2.5 border border-amber-300 bg-amber-50/30 rounded-lg font-bold text-amber-900">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-sky-900 mb-1">🛵 배달 판매가 (원) *</label>
+              <input type="text" id="recipe-delivery-price" required placeholder="5500" oninput="calculateRecipeTotals()" class="plus-shortcut w-full text-xs p-2.5 border border-sky-300 bg-sky-50/30 rounded-lg font-bold text-sky-900">
+            </div>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="text-xs font-bold text-slate-700"><i class="fa-solid fa-magnifying-glass text-amber-700"></i> 원재료 / 부자재 / 수제베이스 / [단품메뉴] 세트 구성 (방향키/엔터 선택 지원)</h4>
+              <button type="button" onclick="addRecipeRow()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-lg">
+                <i class="fa-solid fa-plus text-xs"></i> 항목 추가
+              </button>
+            </div>
+
+            <table class="w-full text-left text-xs">
+              <thead class="text-slate-500 border-b border-slate-200">
+                <tr>
+                  <th class="py-2 px-1">항목명 (타이핑 검색)</th>
+                  <th class="py-2 px-1 w-28">구분</th>
+                  <th class="py-2 px-1 w-24">사용 수량/량</th>
+                  <th class="py-2 px-1 w-16 text-center">단위</th>
+                  <th class="py-2 px-1 text-right w-28">소모 원가</th>
+                  <th class="py-2 px-1 text-center w-12">삭제</th>
+                </tr>
+              </thead>
+              <tbody id="recipe-rows-body" class="divide-y divide-slate-200"></tbody>
+            </table>
+          </div>
+
+          <div class="bg-amber-900 text-white rounded-xl p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div><p class="text-xs text-amber-200">재료비 / 부자재비</p><p class="text-sm font-bold mt-1" id="sum-ing-cost">0원 / 0원</p></div>
+            <div><p class="text-xs text-amber-200">총 원가</p><p class="text-lg font-bold text-amber-200 mt-1" id="sum-total-cost">0원</p></div>
+            <div><p class="text-xs text-amber-200">🏪 매장 원가율 / 순마진</p><p class="text-base font-extrabold text-amber-300 mt-1" id="sum-store-rate">0% (0원)</p></div>
+            <div><p class="text-xs text-sky-200">🛵 배달 원가율 / 순마진</p><p class="text-base font-extrabold text-sky-300 mt-1" id="sum-deliv-rate">0% (0원)</p></div>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" onclick="switchTab('recipes-view')" class="px-5 py-2.5 text-xs text-slate-600 bg-slate-100 rounded-lg">취소</button>
+            <button type="submit" class="px-6 py-2.5 text-xs text-white bg-amber-800 rounded-lg font-bold">저장하기</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 3: 수제 베이스 / 서브 레시피 DB -->
+    <div id="view-sub-recipes" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-200 pb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800"><i class="fa-solid fa-flask text-amber-700"></i> 수제 베이스 / 서브 레시피 DB 관리</h2>
+            <p class="text-xs text-slate-500 mt-0.5">바닐라 시럽, 레몬청 등 수제 베이스를 등록하여 단가를 자동 산출합니다.</p>
+          </div>
+          <button onclick="openSubRecipeModal()" class="bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-plus"></i> 수제 베이스 신규 생성
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="sub-recipes-container"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: 원재료 & 부자재 DB (수정됨: 테이블 최소 너비 및 입력칸 최소 너비 보완) -->
+    <div id="view-ingredients" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-200 pb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800"><i class="fa-solid fa-boxes-stacked text-amber-700"></i> 원재료 및 부자재 DB 관리</h2>
+            <p class="text-xs text-slate-500 mt-0.5">등록시 기존 항목이 있으면 자동완성 드롭다운이 뜹니다. 방향키 이동 및 '+' 단축키 지원.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer bg-slate-100 px-3 py-2 rounded-lg border border-slate-200">
+              <input type="checkbox" id="sort-by-vendor" onchange="renderIngredientTable()" class="w-4 h-4 text-amber-800 rounded">
+              <i class="fa-solid fa-sort"></i> 매입처별 정렬
+            </label>
+            <button onclick="openBatchAddModal()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-list-check"></i> 여러 개 한 번에 추가
+            </button>
+            <button onclick="addNewIngRow()" class="bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-plus"></i> 새 항목 줄 추가
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs pl-2"></i>
+          <input type="text" id="ing-search-kw" oninput="renderIngredientTable()" placeholder="원재료명, 부자재명 또는 구매처로 검색..." class="w-full text-xs bg-transparent focus:outline-none">
+        </div>
+
+        <div id="batch-add-container" class="hidden p-4 bg-emerald-50 border-2 border-emerald-300 rounded-xl space-y-3">
+          <div class="flex justify-between items-center">
+            <h3 class="font-bold text-xs text-emerald-900"><i class="fa-solid fa-list-check"></i> 원재료/부자재 다중 일괄 등록 모드</h3>
+            <div class="space-x-2">
+              <button onclick="addBatchRow()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] px-2.5 py-1 rounded font-bold"><i class="fa-solid fa-plus"></i> 행 추가</button>
+              <button onclick="saveBatchRows()" class="bg-amber-800 hover:bg-amber-900 text-white text-[11px] px-3 py-1 rounded font-bold">일괄 저장하기</button>
+              <button onclick="closeBatchAddModal()" class="text-slate-500 hover:bg-slate-200 text-[11px] px-2 py-1 rounded">닫기</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs min-w-[850px]">
+              <thead class="bg-emerald-100/60 text-emerald-900 font-semibold">
+                <tr>
+                  <th class="p-2 w-24">구분</th>
+                  <th class="p-2 min-w-[160px]">항목명 *</th>
+                  <th class="p-2 w-32">구매처</th>
+                  <th class="p-2 text-right w-24">구입가격 *</th>
+                  <th class="p-2 text-right w-20">용량 *</th>
+                  <th class="p-2 w-20">단위</th>
+                  <th class="p-2 text-right w-16">수율(%)</th>
+                  <th class="p-2 text-center w-12">삭제</th>
+                </tr>
+              </thead>
+              <tbody id="batch-rows-body" class="divide-y divide-emerald-200"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left text-xs min-w-[950px]" id="ing-db-table">
+            <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="p-3 w-24">구분</th>
+                <th class="p-3 min-w-[160px]">항목명 *</th>
+                <th class="p-3 w-36">구매처 / 거래처</th>
+                <th class="p-3 text-right w-28">구입 가격(원) *</th>
+                <th class="p-3 text-right w-24">구입 용량 *</th>
+                <th class="p-3 w-20">단위</th>
+                <th class="p-3 text-right w-20">수율(%)</th>
+                <th class="p-3 text-right font-bold text-amber-900 w-32">개당/단위당 단가</th>
+                <th class="p-3 text-center w-20">저장/삭제</th>
+              </tr>
+            </thead>
+            <tbody id="ing-table-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: 대시보드 -->
+    <div id="view-dashboard" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs text-slate-500 font-medium">등록 메뉴 수</p>
+          <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpi-total-count">0개</h3>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs text-slate-500 font-medium">평균 원가율 (매장 / 배달)</p>
+          <h3 class="text-xl font-bold text-slate-800 mt-1" id="kpi-avg-cost-rate">0% / 0%</h3>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs text-slate-500 font-medium">평균 매장가 / 배달가</p>
+          <h3 class="text-lg font-bold text-slate-800 mt-1" id="kpi-avg-price">0원 / 0원</h3>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs text-slate-500 font-medium">주의/경고 메뉴 (원가율>30%)</p>
+          <h3 class="text-2xl font-bold text-red-600 mt-1" id="kpi-warn-count">0개</h3>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <h3 class="font-bold text-slate-800 text-sm mb-4"><i class="fa-solid fa-chart-bar text-amber-600"></i> 매장 vs 배달 원가율 비교</h3>
+          <div class="relative h-64"><canvas id="costChart"></canvas></div>
+        </div>
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-200 bg-slate-50 font-bold text-xs text-slate-800">메뉴별 매장/배달 원가 현황표</div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs min-w-[700px]">
+              <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">카테고리</th>
+                  <th class="p-3">메뉴명</th>
+                  <th class="p-3 text-right">총 원가</th>
+                  <th class="p-3 text-right text-amber-900 bg-amber-50/50">매장가</th>
+                  <th class="p-3 text-right text-amber-900 bg-amber-50/50">매장 원가율</th>
+                  <th class="p-3 text-right text-sky-900 bg-sky-50/50">배달가</th>
+                  <th class="p-3 text-right text-sky-900 bg-sky-50/50">배달 원가율</th>
+                  <th class="p-3 text-center">관리</th>
+                </tr>
+              </thead>
+              <tbody id="menu-table-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: 배달 4사 마진 비교 -->
+    <div id="view-delivery" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-base font-bold text-slate-800"><i class="fa-solid fa-motorcycle text-amber-600"></i> 배달 4사(배민, 쿠팡이츠, 요기요, 땡겨요) 마진 비교</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">비교할 메뉴 선택</label>
+            <select id="deliv-menu-select" onchange="onDeliveryMenuChange()" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg font-bold"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">배달 판매가 (원)</label>
+            <input type="text" id="deliv-price" oninput="updateDeliveryCalc()" class="plus-shortcut w-full text-xs p-2.5 border border-slate-300 rounded-lg font-bold text-amber-900">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">추가 포장비/부자재 (원)</label>
+            <input type="text" id="deliv-extra-pkg" value="200" oninput="updateDeliveryCalc()" class="plus-shortcut w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-500">* 각 플랫폼의 중개수수료, 기본 배달비, 결제정산수수료는 부가세 포함 기준으로 자동 계산됩니다.</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="delivery-cards-container"></div>
+    </div>
+
+    <!-- TAB 7: 주문 건별 복합 마진 정산 -->
+    <div id="view-order-calc" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-200 pb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800"><i class="fa-solid fa-receipt text-emerald-600"></i> 주문 건별 복합 메뉴 마진 정산</h2>
+            <p class="text-xs text-slate-500 mt-0.5">여러 메뉴가 한 주문으로 들어왔을 때, 총 수수료와 배달비를 안분하여 각 메뉴별 실질 순마진을 계산합니다.</p>
+          </div>
+          <div class="w-full md:w-64">
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">배달 플랫폼 선택</label>
+            <select id="order-platform" onchange="calculateOrderMargin()" class="w-full text-xs p-2 border border-slate-300 rounded-lg font-bold bg-slate-50">
+              <option value="baemin">배달의민족 (중개 6.8%, 배달 2,600원)</option>
+              <option value="coupang">쿠팡이츠 (중개 7.8%, 배달 3,100원)</option>
+              <option value="yogiyo">요기요 (중개 9.7%, 배달 2,900원)</option>
+              <option value="ddangyo">땡겨요 (중개 2.0%, 배달 3,000원)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="text-xs font-bold text-slate-700">주문 포함 메뉴 구성</h4>
+            <button type="button" onclick="addOrderMenuRow()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i> 메뉴 추가
+            </button>
+          </div>
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-600 border-b border-slate-200">
+              <tr>
+                <th class="p-2">메뉴 선택</th>
+                <th class="p-2 w-24 text-center">수량</th>
+                <th class="p-2 text-right w-28">배달 단가</th>
+                <th class="p-2 text-right w-32">주문 총액</th>
+                <th class="p-2 text-center w-16">삭제</th>
+              </tr>
+            </thead>
+            <tbody id="order-rows-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">추가 포장비 / 부자재비 (원)</label>
+            <input type="text" id="order-extra-pkg" value="200" oninput="calculateOrderMargin()" class="plus-shortcut w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+          </div>
+          <div class="md:col-span-2 bg-emerald-900 text-white p-4 rounded-xl flex flex-wrap justify-around items-center text-center gap-4">
+            <div><p class="text-[11px] text-emerald-200">주문 총 결제금액</p><p class="text-base font-bold mt-0.5" id="order-total-price">0원</p></div>
+            <div><p class="text-[11px] text-emerald-200">총 공제비용 (수수료+배달비+포장)</p><p class="text-base font-bold mt-0.5 text-orange-300" id="order-total-deduct">0원</p></div>
+            <div><p class="text-[11px] text-emerald-200">최종 사장님 순이익</p><p class="text-xl font-extrabold mt-0.5 text-emerald-300" id="order-final-net">0원</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 메뉴별 안분 결과 내역 -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-200 bg-slate-50 font-bold text-xs text-slate-800">
+          <i class="fa-solid fa-chart-pie text-emerald-600"></i> 메뉴별 안분된 수수료/배달비 및 실질 순마진 상세표
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="p-3">메뉴명</th>
+                <th class="p-3 text-center">수량</th>
+                <th class="p-3 text-right">매출액</th>
+                <th class="p-3 text-right">안분된 수수료</th>
+                <th class="p-3 text-right">안분된 배달비</th>
+                <th class="p-3 text-right">총 원가</th>
+                <th class="p-3 text-right font-bold text-emerald-800">실질 순마진</th>
+                <th class="p-3 text-right">마진율</th>
+              </tr>
+            </thead>
+            <tbody id="order-result-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 수제 베이스 / 서브 레시피 생성 및 편집 모달 -->
+  <div id="sub-recipe-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+        <h3 class="font-bold text-base text-slate-800"><i class="fa-solid fa-flask text-amber-700"></i> 수제 베이스 / 서브 레시피 작성</h3>
+        <button onclick="closeSubRecipeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <input type="hidden" id="sub-id">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold text-slate-700 mb-1">수제 베이스 명칭 *</label>
+          <input type="text" id="sub-name" placeholder="예: 수제 바닐라 시럽, 레몬청" class="w-full text-xs p-2 border border-slate-300 rounded-lg font-bold">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">1회 제조 완성량 *</label>
+          <div class="flex gap-1">
+            <input type="text" id="sub-output-capacity" placeholder="1550" class="plus-shortcut w-full text-xs p-2 border border-slate-300 rounded-lg font-bold text-right">
+            <select id="sub-unit" class="text-xs p-2 border border-slate-300 rounded-lg">
+              <option value="g">g</option>
+              <option value="ml">ml</option>
+              <option value="개">개</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-700">1회 제조시 투입 원재료 목록 (타이핑 후 방향키/엔터 선택)</span>
+          <button type="button" onclick="addSubIngredientRow()" class="bg-slate-700 text-white text-[11px] px-2.5 py-1 rounded font-bold"><i class="fa-solid fa-plus"></i> 재료 추가</button>
+        </div>
+        <table class="w-full text-left text-xs">
+          <thead class="text-slate-500 border-b border-slate-200">
+            <tr>
+              <th class="py-1.5 px-1">원재료 선택 (타이핑 검색)</th>
+              <th class="py-1.5 px-1 w-24">투입량</th>
+              <th class="py-1.5 px-1 text-right w-24">소모 원가</th>
+              <th class="py-1.5 px-1 text-center w-10">삭제</th>
+            </tr>
+          </thead>
+          <tbody id="sub-rows-body" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+
+      <div class="bg-amber-900 text-white p-4 rounded-xl flex justify-between items-center text-xs">
+        <div>
+          <p class="text-amber-200 text-[11px]">1회 제조 총 원가</p>
+          <p class="text-base font-extrabold" id="sub-total-cost-display">0원</p>
+        </div>
+        <div class="text-right">
+          <p class="text-amber-200 text-[11px]">단위당 자동 계산 단가</p>
+          <p class="text-lg font-extrabold text-amber-300" id="sub-unit-cost-display">0원 / g</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeSubRecipeModal()" class="px-4 py-2 text-xs text-slate-600 bg-slate-100 rounded-lg font-bold">취소</button>
+        <button onclick="saveSubRecipe()" class="px-5 py-2 text-xs text-white bg-amber-800 rounded-lg font-bold">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const defaultIngredients = [
+      { id: 'i1', type: '원재료', name: '스페셜티 원두', vendor: '동서식품', price: 30000, capacity: 1000, unit: 'g', yieldPct: 90 },
+      { id: 'i2', type: '원재료', name: '서울우유 1000ml', price: 2900, capacity: 1000, unit: 'ml', yieldPct: 100, vendor: '서울우유 대리점' },
+      { id: 'i3', type: '원재료', name: '바닐라 시럽', price: 18000, capacity: 1000, unit: 'ml', yieldPct: 100, vendor: '모닌 공식몰' },
+      { id: 'i4', type: '원재료', name: '딸기 퓨레', price: 12000, capacity: 1000, unit: 'g', yieldPct: 100, vendor: '쿠팡' },
+      { id: 'i5', type: '원재료', name: '냉동 크로플 생지', price: 24000, capacity: 30, unit: '개', yieldPct: 100, vendor: '삼양사' },
+      { id: 'p1', type: '부자재', name: '16oz 투명 아이스컵', price: 50000, capacity: 1000, unit: '개', yieldPct: 100, vendor: '방산시장 팩몰' },
+      { id: 'p2', type: '부자재', name: '아이스 돔 뚜껑', price: 20000, capacity: 1000, unit: '개', yieldPct: 100, vendor: '방산시장 팩몰' },
+      { id: 'p3', type: '부자재', name: '친환경 개별빨대', price: 15000, capacity: 1000, unit: '개', yieldPct: 100, vendor: '쿠팡' },
+      { id: 'p4', type: '부자재', name: '크로플 디저트 상자', price: 15000, capacity: 100, unit: '개', yieldPct: 100, vendor: '박스지인' }
+    ];
+
+    const defaultSubRecipes = [];
+    const defaultMenus = [];
+
+    const deliveryPlatforms = [
+      { id: 'baemin', name: '배달의민족', color: 'border-emerald-500 bg-emerald-50 text-emerald-800', rate: 0.068, deliveryFee: 2600, payRate: 0.03 },
+      { id: 'coupang', name: '쿠팡이츠', color: 'border-sky-500 bg-sky-50 text-sky-800', rate: 0.078, deliveryFee: 3100, payRate: 0.03 },
+      { id: 'yogiyo', name: '요기요', color: 'border-pink-500 bg-pink-50 text-pink-800', rate: 0.097, deliveryFee: 2900, payRate: 0.03 },
+      { id: 'ddangyo', name: '땡겨요', color: 'border-orange-500 bg-orange-50 text-orange-800', rate: 0.020, deliveryFee: 3000, payRate: 0.03 }
+    ];
+
+    let ingredients = [];
+    let subRecipes = [];
+    let menus = [];
+    let activeOverviewCat = 'ALL';
+    let currentPriceMode = 'ALL';
+    let chartInstance = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      renderRecipesOverview();
+      renderIngredientTable();
+      renderSubRecipes();
+      renderDashboard();
+      initDeliverySelect();
+      updateDeliveryCalc();
+      bindGlobalShortcuts();
+      initOrderCalc();
+    });
+
+    function bindGlobalShortcuts() {
+      document.addEventListener('keydown', (e) => {
+        const input = e.target;
+        if (!input || !input.matches('input')) return;
+
+        if (e.key === '+' || e.key === 'Add') {
+          if (input.classList.contains('plus-shortcut') || input.type === 'number' || input.dataset.type === 'numeric') {
+            e.preventDefault();
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const val = input.value;
+            input.value = val.substring(0, start) + '000' + val.substring(end);
+            input.selectionStart = input.selectionEnd = start + 3;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+
+        if (input.closest('#ing-db-table') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          const currentTd = input.closest('td');
+          const currentTr = input.closest('tr');
+          if (!currentTd || !currentTr) return;
+
+          const colIndex = Array.from(currentTr.children).indexOf(currentTd);
+          let targetTr = null;
+
+          if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            targetTr = currentTr.previousElementSibling;
+            if (targetTr && targetTr.children[colIndex]) {
+              const nextInput = targetTr.children[colIndex].querySelector('input, select');
+              if (nextInput) nextInput.focus();
+            }
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            targetTr = currentTr.nextElementSibling;
+            if (targetTr && targetTr.children[colIndex]) {
+              const nextInput = targetTr.children[colIndex].querySelector('input, select');
+              if (nextInput) nextInput.focus();
+            }
+          } else if (e.key === 'ArrowLeft' && input.selectionStart === 0) {
+            let prevTd = currentTd.previousElementSibling;
+            while (prevTd) {
+              const prevInput = prevTd.querySelector('input, select');
+              if (prevInput) { prevInput.focus(); break; }
+              prevTd = prevTd.previousElementSibling;
+            }
+          } else if (e.key === 'ArrowRight' && input.selectionEnd === input.value.length) {
+            let nextTd = currentTd.nextElementSibling;
+            while (nextTd) {
+              const nextInput = nextTd.querySelector('input, select');
+              if (nextInput) { nextInput.focus(); break; }
+              nextTd = nextTd.nextElementSibling;
+            }
+          }
+        }
+      });
+    }
+
+    function loadData() {
+      const savedIng = localStorage.getItem('cafe_ingredients_v6');
+      const savedSub = localStorage.getItem('cafe_sub_recipes_v6');
+      const savedMenu = localStorage.getItem('cafe_menus_v7');
+      
+      ingredients = savedIng ? JSON.parse(savedIng) : defaultIngredients;
+      subRecipes = savedSub ? JSON.parse(savedSub) : defaultSubRecipes;
+      menus = savedMenu ? JSON.parse(savedMenu) : defaultMenus;
+      
+      menus.forEach((m, idx) => {
+        if(!m.deliveryPrice) m.deliveryPrice = m.price;
+        if(m.category === '음료') m.category = '커피';
+        if(m.order === undefined) m.order = idx;
+      });
+    }
+
+    function saveData() {
+      localStorage.setItem('cafe_ingredients_v6', JSON.stringify(ingredients));
+      localStorage.setItem('cafe_sub_recipes_v6', JSON.stringify(subRecipes));
+      localStorage.setItem('cafe_menus_v7', JSON.stringify(menus));
+    }
+
+    function resetData() {
+      if (confirm('모든 데이터를 초기 상태로 복원하시겠습니까?')) {
+        ingredients = defaultIngredients;
+        subRecipes = defaultSubRecipes;
+        menus = defaultMenus;
+        saveData();
+        renderRecipesOverview();
+        renderIngredientTable();
+        renderSubRecipes();
+        renderDashboard();
+        initDeliverySelect();
+        updateDeliveryCalc();
+        initOrderCalc();
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-100', 'text-amber-900', 'active');
+        btn.classList.add('text-slate-600');
+      });
+
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      if(activeBtn) {
+        activeBtn.classList.add('bg-amber-100', 'text-amber-900', 'active');
+        activeBtn.classList.remove('text-slate-600');
+      }
+
+      if(tabId === 'recipes-view') renderRecipesOverview();
+      if(tabId === 'ingredients') renderIngredientTable();
+      if(tabId === 'sub-recipes') renderSubRecipes();
+      if(tabId === 'dashboard') renderDashboard();
+      if(tabId === 'delivery') { initDeliverySelect(); updateDeliveryCalc(); }
+      if(tabId === 'order-calc') { initOrderCalc(); }
+    }
+
+    function getUnitCost(ing) {
+      if(!ing || !ing.capacity || ing.capacity <= 0) return 0;
+      return ing.price / (ing.capacity * (ing.yieldPct / 100));
+    }
+
+    function getSubRecipeMetrics(sub) {
+      let totalCost = 0;
+      sub.items.forEach(item => {
+        const ing = ingredients.find(i => i.id === item.ingId);
+        if(ing) {
+          totalCost += getUnitCost(ing) * item.amount;
+        }
+      });
+      const unitCost = sub.outputCapacity > 0 ? (totalCost / sub.outputCapacity) : 0;
+      return { totalCost: Math.round(totalCost), unitCost };
+    }
+
+    function getMenuTotalCost(menuId, visited = new Set()) {
+      if (visited.has(menuId)) return 0;
+      visited.add(menuId);
+
+      const menu = menus.find(m => m.id === menuId);
+      if (!menu) return 0;
+
+      let cost = 0;
+      menu.items.forEach(item => {
+        const itemInfo = getItemInfo(item.ingId);
+        if (itemInfo) {
+          if (itemInfo.type === '단품메뉴') {
+            cost += getMenuTotalCost(item.ingId, visited) * item.amount;
+          } else {
+            cost += itemInfo.unitCost * item.amount;
+          }
+        }
+      });
+      return Math.round(cost);
+    }
+
+    function getItemInfo(ingId) {
+      const ing = ingredients.find(i => i.id === ingId);
+      if(ing) {
+        return {
+          id: ing.id,
+          name: ing.name,
+          type: ing.type,
+          unit: ing.unit,
+          vendor: ing.vendor,
+          unitCost: getUnitCost(ing),
+          isSub: false
+        };
+      }
+      const sub = subRecipes.find(s => s.id === ingId);
+      if(sub) {
+        const metrics = getSubRecipeMetrics(sub);
+        return {
+          id: sub.id,
+          name: sub.name,
+          type: '수제베이스',
+          unit: sub.unit,
+          vendor: '자체제조',
+          unitCost: metrics.unitCost,
+          isSub: true
+        };
+      }
+      const menu = menus.find(m => m.id === ingId);
+      if(menu) {
+        const menuCost = getMenuTotalCost(menu.id);
+        return {
+          id: menu.id,
+          name: menu.name,
+          type: '단품메뉴',
+          unit: '개',
+          vendor: '등록메뉴',
+          unitCost: menuCost,
+          isSub: false
+        };
+      }
+      return null;
+    }
+
+    function calculateMenuMetrics(menu) {
+      let ingCostSum = 0;
+      let pkgCostSum = 0;
+
+      menu.items.forEach(item => {
+        const itemInfo = getItemInfo(item.ingId);
+        if(itemInfo) {
+          const cost = itemInfo.unitCost * item.amount;
+          if(itemInfo.type === '부자재') pkgCostSum += cost;
+          else ingCostSum += cost;
+        }
+      });
+
+      const totalCost = Math.round(ingCostSum + pkgCostSum);
+      const price = menu.price || 0;
+      const delivPrice = menu.deliveryPrice || price;
+
+      const storeMargin = price - totalCost;
+      const storeCostRate = price > 0 ? (totalCost / price) * 100 : 0;
+
+      const delivMargin = delivPrice - totalCost;
+      const delivCostRate = delivPrice > 0 ? (totalCost / delivPrice) * 100 : 0;
+
+      return { 
+        ingCostSum: Math.round(ingCostSum), 
+        pkgCostSum: Math.round(pkgCostSum), 
+        totalCost, 
+        price, 
+        delivPrice,
+        storeMargin, 
+        storeCostRate,
+        delivMargin,
+        delivCostRate
+      };
+    }
+
+    function setPriceMode(mode) {
+      currentPriceMode = mode;
+      document.querySelectorAll('.price-mode-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-800', 'text-white');
+        btn.classList.add('bg-slate-100', 'text-slate-600');
+      });
+      const target = document.getElementById(`price-mode-${mode}`);
+      if(target) {
+        target.classList.remove('bg-slate-100', 'text-slate-600');
+        target.classList.add('bg-amber-800', 'text-white');
+      }
+      renderRecipesOverview();
+    }
+
+    function filterOverviewCat(cat) {
+      activeOverviewCat = cat;
+      document.querySelectorAll('.ov-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-800', 'text-white');
+        btn.classList.add('bg-slate-100', 'text-slate-600');
+      });
+      const targetBtn = document.getElementById(`ov-filter-${cat}`);
+      if(targetBtn) {
+        targetBtn.classList.remove('bg-slate-100', 'text-slate-600');
+        targetBtn.classList.add('bg-amber-800', 'text-white');
+      }
+      renderRecipesOverview();
+    }
+
+    function getCategoryBadgeStyle(category) {
+      switch(category) {
+        case '커피':
+          return 'bg-amber-100 text-amber-900 border border-amber-300 font-bold';
+        case '논커피':
+          return 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold';
+        case '디저트':
+          return 'bg-pink-100 text-pink-900 border border-pink-300 font-bold';
+        case '샌드위치/브런치':
+          return 'bg-orange-100 text-orange-900 border border-orange-300 font-bold';
+        case '세트':
+          return 'bg-purple-100 text-purple-900 border border-purple-300 font-extrabold';
+        default:
+          return 'bg-slate-200 text-slate-700 font-medium';
+      }
+    }
+
+    function renderRecipesOverview() {
+      const container = document.getElementById('recipes-overview-container');
+      const searchKw = (document.getElementById('recipe-search-kw').value || '').trim().toLowerCase();
+      container.innerHTML = '';
+
+      const sortedMenus = [...menus].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      const filteredMenus = sortedMenus.filter(m => {
+        const catMatch = activeOverviewCat === 'ALL' || m.category === activeOverviewCat;
+        const nameMatch = m.name.toLowerCase().includes(searchKw);
+        return catMatch && nameMatch;
+      });
+
+      if(filteredMenus.length === 0) {
+        container.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 text-xs">등록된 레시피가 없습니다.</div>';
+        return;
+      }
+
+      filteredMenus.forEach((m) => {
+        const metrics = calculateMenuMetrics(m);
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between';
+
+        let itemsHtml = '';
+        m.items.forEach((item, iIdx) => {
+          const itemInfo = getItemInfo(item.ingId);
+          if(!itemInfo) return;
+          const lineCost = Math.round(itemInfo.unitCost * item.amount);
+          
+          let badgeClass = 'bg-amber-50 text-amber-800 border border-amber-200';
+          if(itemInfo.type === '부자재') badgeClass = 'bg-purple-50 text-purple-700 border border-purple-200';
+          if(itemInfo.type === '수제베이스') badgeClass = 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold';
+          if(itemInfo.type === '단품메뉴') badgeClass = 'bg-sky-100 text-sky-900 border border-sky-300 font-extrabold';
+
+          itemsHtml += `
+            <div class="flex justify-between items-center py-2 border-b border-slate-100 text-xs gap-2">
+              <div class="flex items-center gap-2 min-w-0 flex-grow">
+                <span class="text-[10px] px-1.5 py-1 rounded w-14 text-center shrink-0 ${badgeClass}">${itemInfo.type}</span>
+                <span class="font-medium text-slate-800 break-words leading-tight">${itemInfo.name} ${itemInfo.vendor ? `<span class="text-[10px] text-slate-400 font-normal">(${itemInfo.vendor})</span>` : ''}</span>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <input type="text" data-type="numeric" value="${item.amount}" onchange="quickUpdateAmount('${m.id}', ${iIdx}, this.value)" class="plus-shortcut w-14 text-right border border-slate-300 rounded px-1 py-0.5 text-xs font-bold">
+                <span class="text-[11px] text-slate-500 w-6">${itemInfo.unit}</span>
+                <span class="font-bold text-slate-700 text-right w-16">${lineCost.toLocaleString()}원</span>
+              </div>
+            </div>
+          `;
+        });
+
+        let priceSectionHtml = '';
+        if(currentPriceMode === 'STORE') {
+          priceSectionHtml = `
+            <div class="flex justify-between items-center text-xs pb-2 border-b border-slate-200">
+              <span class="font-bold text-amber-900">🏪 매장 판매가:</span>
+              <div class="flex items-center gap-1">
+                <input type="text" value="${m.price}" onchange="quickUpdatePrice('${m.id}', 'price', this.value)" class="plus-shortcut w-20 text-right font-extrabold text-amber-900 border border-amber-300 rounded px-1 py-0.5 text-xs bg-amber-50/50">
+                <span class="font-bold text-xs">원</span>
+              </div>
+            </div>
+          `;
+        } else if(currentPriceMode === 'DELIVERY') {
+          priceSectionHtml = `
+            <div class="flex justify-between items-center text-xs pb-2 border-b border-slate-200">
+              <span class="font-bold text-sky-900">🛵 배달 판매가:</span>
+              <div class="flex items-center gap-1">
+                <input type="text" value="${m.deliveryPrice}" onchange="quickUpdatePrice('${m.id}', 'deliveryPrice', this.value)" class="plus-shortcut w-20 text-right font-extrabold text-sky-900 border border-sky-300 rounded px-1 py-0.5 text-xs bg-sky-50/50">
+                <span class="font-bold text-xs">원</span>
+              </div>
+            </div>
+          `;
+        } else {
+          priceSectionHtml = `
+            <div class="grid grid-cols-2 gap-2 text-xs pb-2 border-b border-slate-200">
+              <div class="flex justify-between items-center bg-amber-50/50 p-1.5 rounded border border-amber-200">
+                <span class="font-bold text-amber-900 text-[11px]">🏪 매장가:</span>
+                <input type="text" value="${m.price}" onchange="quickUpdatePrice('${m.id}', 'price', this.value)" class="plus-shortcut w-16 text-right font-extrabold text-amber-900 border border-amber-300 rounded px-1 py-0.5 text-[11px]">
+              </div>
+              <div class="flex justify-between items-center bg-sky-50/50 p-1.5 rounded border border-sky-200">
+                <span class="font-bold text-sky-900 text-[11px]">🛵 배달가:</span>
+                <input type="text" value="${m.deliveryPrice}" onchange="quickUpdatePrice('${m.id}', 'deliveryPrice', this.value)" class="plus-shortcut w-16 text-right font-extrabold text-sky-900 border border-sky-300 rounded px-1 py-0.5 text-[11px]">
+              </div>
+            </div>
+          `;
+        }
+
+        const badgeStyle = getCategoryBadgeStyle(m.category);
+
+        card.innerHTML = `
+          <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+            <div>
+              <span class="text-[11px] px-2.5 py-0.5 rounded-full ${badgeStyle}">${m.category}</span>
+              <h3 class="font-bold text-slate-800 text-base mt-1.5">${m.name}</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="flex flex-col gap-0.5">
+                <button type="button" onclick="moveRecipeOrder('${m.id}', 'up')" class="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-700 px-1.5 py-0.5 rounded" title="위로"><i class="fa-solid fa-arrow-up"></i></button>
+                <button type="button" onclick="moveRecipeOrder('${m.id}', 'down')" class="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-700 px-1.5 py-0.5 rounded" title="아래로"><i class="fa-solid fa-arrow-down"></i></button>
+              </div>
+              <div class="text-right space-y-0.5 pl-1 border-l border-slate-200">
+                ${currentPriceMode === 'DELIVERY' ? `
+                  <span class="text-[10px] text-slate-500 block">배달 원가율</span>
+                  <span class="text-base font-extrabold ${metrics.delivCostRate > 30 ? 'text-red-500':'text-emerald-600'}">${metrics.delivCostRate.toFixed(1)}%</span>
+                ` : `
+                  <span class="text-[10px] text-slate-500 block">매장 원가율</span>
+                  <span class="text-base font-extrabold ${metrics.storeCostRate > 30 ? 'text-red-500':'text-emerald-600'}">${metrics.storeCostRate.toFixed(1)}%</span>
+                `}
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 space-y-2 flex-grow">
+            ${priceSectionHtml}
+            <div class="pt-1">
+              <p class="text-[11px] font-bold text-slate-500 mb-2">투입 수량 레시피 (즉시 수정 가능):</p>
+              <div class="space-y-1">${itemsHtml}</div>
+            </div>
+          </div>
+
+          <div class="p-3 bg-amber-900 text-white flex justify-between items-center text-xs">
+            <div><span>총 원가: </span><span class="font-bold text-amber-200">${metrics.totalCost.toLocaleString()}원</span></div>
+            <div>
+              ${currentPriceMode === 'DELIVERY' ? 
+                `<span>배달 마진: </span><span class="font-bold text-sky-300">${metrics.delivMargin.toLocaleString()}원</span>` : 
+                `<span>매장 마진: </span><span class="font-bold text-emerald-300">${metrics.storeMargin.toLocaleString()}원</span>`}
+            </div>
+            <button onclick="editRecipe('${m.id}')" class="bg-amber-700 hover:bg-amber-600 px-2.5 py-1 rounded text-[11px]">상세편집</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function moveRecipeOrder(menuId, direction) {
+      let sortedMenus = [...menus].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const idx = sortedMenus.findIndex(m => m.id === menuId);
+      if (idx < 0) return;
+
+      if (direction === 'up' && idx > 0) {
+        const targetIdx = idx - 1;
+        const temp = sortedMenus[idx].order;
+        sortedMenus[idx].order = sortedMenus[targetIdx].order;
+        sortedMenus[targetIdx].order = temp;
+      } else if (direction === 'down' && idx < sortedMenus.length - 1) {
+        const targetIdx = idx + 1;
+        const temp = sortedMenus[idx].order;
+        sortedMenus[idx].order = sortedMenus[targetIdx].order;
+        sortedMenus[targetIdx].order = temp;
+      } else {
+        return;
+      }
+
+      sortedMenus.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      sortedMenus.forEach((m, i) => {
+        m.order = i;
+      });
+
+      menus = sortedMenus;
+      saveData();
+      renderRecipesOverview();
+    }
+
+    function quickUpdatePrice(menuId, field, newPrice) {
+      const menu = menus.find(m => m.id === menuId);
+      if(menu) {
+        menu[field] = parseFloat(newPrice.replace(/,/g, '')) || 0;
+        saveData();
+        renderRecipesOverview();
+      }
+    }
+
+    function quickUpdateAmount(menuId, itemIdx, newAmount) {
+      const menu = menus.find(m => m.id === menuId);
+      if(menu && menu.items[itemIdx]) {
+        menu.items[itemIdx].amount = parseFloat(newAmount.replace(/,/g, '')) || 0;
+        saveData();
+        renderRecipesOverview();
+      }
+    }
+
+    function renderIngredientTable() {
+      const tbody = document.getElementById('ing-table-body');
+      tbody.innerHTML = '';
+
+      const sortByVendor = document.getElementById('sort-by-vendor').checked;
+      const searchKw = (document.getElementById('ing-search-kw').value || '').trim().toLowerCase();
+
+      const filteredIngredients = ingredients.filter(i => {
+        const nameMatch = i.name.toLowerCase().includes(searchKw);
+        const vendorMatch = (i.vendor || '').toLowerCase().includes(searchKw);
+        const typeMatch = i.type.toLowerCase().includes(searchKw);
+        return nameMatch || vendorMatch || typeMatch;
+      });
+
+      const sortedIngredients = [...filteredIngredients].sort((a, b) => {
+        if (a.type !== b.type) {
+          return a.type === '원재료' ? -1 : 1;
+        }
+        if (sortByVendor) {
+          const vA = (a.vendor || '').toLowerCase();
+          const vB = (b.vendor || '').toLowerCase();
+          if (vA < vB) return -1;
+          if (vA > vB) return 1;
+        }
+        return 0;
+      });
+
+      if(sortedIngredients.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400">검색 결과가 없습니다.</td></tr>`;
+        return;
+      }
+
+      sortedIngredients.forEach(ing => {
+        const unitCost = getUnitCost(ing);
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+        tr.innerHTML = `
+          <td class="p-2">
+            <select onchange="updateIngField('${ing.id}', 'type', this.value)" class="w-full text-xs p-1 border border-slate-300 rounded font-bold ${ing.type === '부자재' ? 'text-purple-700':'text-amber-800'}">
+              <option value="원재료" ${ing.type === '원재료' ? 'selected':''}>원재료</option>
+              <option value="부자재" ${ing.type === '부자재' ? 'selected':''}>부자재</option>
+            </select>
+          </td>
+          <td class="p-2 min-w-[160px]"><input type="text" value="${ing.name}" onchange="updateIngField('${ing.id}', 'name', this.value)" class="w-full min-w-[150px] text-xs p-1 border border-slate-300 rounded font-bold text-slate-800"></td>
+          <td class="p-2"><input type="text" value="${ing.vendor || ''}" placeholder="구매처 입력" onchange="updateIngField('${ing.id}', 'vendor', this.value)" class="w-full text-xs p-1 border border-slate-300 rounded text-slate-600"></td>
+          <td class="p-2 text-right"><input type="text" value="${ing.price}" onchange="updateIngField('${ing.id}', 'price', this.value)" class="plus-shortcut w-full text-xs p-1 text-right border border-slate-300 rounded font-bold"></td>
+          <td class="p-2 text-right"><input type="text" value="${ing.capacity}" onchange="updateIngField('${ing.id}', 'capacity', this.value)" class="plus-shortcut w-full text-xs p-1 text-right border border-slate-300 rounded"></td>
+          <td class="p-2">
+            <select onchange="updateIngField('${ing.id}', 'unit', this.value)" class="w-full text-xs p-1 border border-slate-300 rounded">
+              <option value="g" ${ing.unit === 'g' ? 'selected':''}>g</option>
+              <option value="ml" ${ing.unit === 'ml' ? 'selected':''}>ml</option>
+              <option value="개" ${ing.unit === '개' ? 'selected':''}>개</option>
+              <option value="장" ${ing.unit === '장' ? 'selected':''}>장</option>
+            </select>
+          </td>
+          <td class="p-2 text-right"><input type="text" value="${ing.yieldPct}" onchange="updateIngField('${ing.id}', 'yieldPct', this.value)" class="plus-shortcut w-full text-xs p-1 text-right border border-slate-300 rounded"></td>
+          <td class="p-2 text-right font-bold text-amber-900">${unitCost.toFixed(2)}원 / ${ing.unit}</td>
+          <td class="p-2 text-center">
+            <button onclick="deleteIngredient('${ing.id}')" class="text-red-500 hover:bg-red-50 p-1.5 rounded" title="삭제"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addNewIngRow() {
+      const tbody = document.getElementById('ing-table-body');
+      const tr = document.createElement('tr');
+      tr.className = 'bg-amber-50/60 border-b-2 border-amber-300 relative';
+      tr.id = 'new-ing-row';
+      tr.innerHTML = `
+        <td class="p-2">
+          <select id="new-ing-type" class="w-full text-xs p-1 border border-amber-400 rounded font-bold text-amber-900">
+            <option value="원재료">원재료</option>
+            <option value="부자재">부자재</option>
+          </select>
+        </td>
+        <td class="p-2 min-w-[160px] relative">
+          <input type="text" id="new-ing-name" placeholder="새 재료/부자재명 *" oninput="handleNewIngInput(this)" onkeydown="handleNewIngKeydown(event, this)" onfocus="handleNewIngInput(this)" class="w-full min-w-[150px] text-xs p-1 border border-amber-400 rounded font-bold">
+          <div id="new-ing-dropdown" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 max-h-40 overflow-y-auto"></div>
+        </td>
+        <td class="p-2"><input type="text" id="new-ing-vendor" placeholder="구매처" class="w-full text-xs p-1 border border-amber-400 rounded"></td>
+        <td class="p-2"><input type="text" id="new-ing-price" placeholder="금액 *" class="plus-shortcut w-full text-xs p-1 text-right border border-amber-400 rounded font-bold"></td>
+        <td class="p-2"><input type="text" id="new-ing-capacity" placeholder="용량 *" class="plus-shortcut w-full text-xs p-1 text-right border border-amber-400 rounded"></td>
+        <td class="p-2">
+          <select id="new-ing-unit" class="w-full text-xs p-1 border border-amber-400 rounded">
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="개">개</option>
+            <option value="장">장</option>
+          </select>
+        </td>
+        <td class="p-2"><input type="text" id="new-ing-yield" value="100" class="plus-shortcut w-full text-xs p-1 text-right border border-amber-400 rounded"></td>
+        <td class="p-2 text-center text-slate-400 text-[11px]">입력 후 저장</td>
+        <td class="p-2 text-center space-x-1">
+          <button onclick="saveNewIngRow()" class="bg-amber-800 text-white px-2 py-1 rounded text-xs font-bold hover:bg-amber-900">저장</button>
+          <button onclick="cancelNewIngRow()" class="text-slate-500 hover:bg-slate-200 px-1.5 py-1 rounded text-xs">취소</button>
+        </td>
+      `;
+      tbody.prepend(tr);
+    }
+
+    function handleNewIngInput(inputEl) {
+      const query = inputEl.value.trim().toLowerCase();
+      const dropdown = document.getElementById('new-ing-dropdown');
+      if(!dropdown) return;
+
+      if(!query) {
+        dropdown.classList.add('hidden');
+        inputEl.classList.remove('border-emerald-500', 'bg-emerald-50/30');
+        return;
+      }
+
+      const matches = ingredients.filter(i => i.name.toLowerCase().includes(query));
+
+      if(matches.length === 0) {
+        dropdown.classList.add('hidden');
+        inputEl.classList.add('border-emerald-500', 'bg-emerald-50/30');
+      } else {
+        inputEl.classList.remove('border-emerald-500', 'bg-emerald-50/30');
+        dropdown.innerHTML = '<div class="p-1.5 text-[10px] bg-amber-100 text-amber-900 font-bold">⚠️ 기존 등록된 유사 항목이 있습니다:</div>';
+        matches.forEach((ing, idx) => {
+          const itemDiv = document.createElement('div');
+          itemDiv.className = `dropdown-item p-2 hover:bg-amber-50 cursor-pointer text-xs flex justify-between items-center border-b border-slate-100 ${idx === 0 ? 'selected' : ''}`;
+          itemDiv.innerHTML = `<span class="font-bold text-slate-800">[${ing.type}] ${ing.name} ${ing.vendor ? `(${ing.vendor})`:''}</span><span class="text-[10px] text-slate-400">${ing.price}원/${ing.capacity}${ing.unit}</span>`;
+          itemDiv.onclick = () => {
+            inputEl.value = ing.name;
+            dropdown.classList.add('hidden');
+          };
+          dropdown.appendChild(itemDiv);
+        });
+        dropdown.classList.remove('hidden');
+      }
+    }
+
+    function handleNewIngKeydown(e, inputEl) {
+      const dropdown = document.getElementById('new-ing-dropdown');
+      if(!dropdown || dropdown.classList.contains('hidden')) return;
+
+      const items = Array.from(dropdown.querySelectorAll('.dropdown-item'));
+      if(items.length === 0) return;
+
+      let currentIndex = items.findIndex(item => item.classList.contains('selected'));
+
+      if(e.key === 'ArrowDown') {
+        e.preventDefault();
+        if(currentIndex < items.length - 1) {
+          if(currentIndex >= 0) items[currentIndex].classList.remove('selected');
+          items[currentIndex + 1].classList.add('selected');
+          items[currentIndex + 1].scrollIntoView({ block: 'nearest' });
+        }
+      } else if(e.key === 'ArrowUp') {
+        e.preventDefault();
+        if(currentIndex > 0) {
+          items[currentIndex].classList.remove('selected');
+          items[currentIndex - 1].classList.add('selected');
+          items[currentIndex - 1].scrollIntoView({ block: 'nearest' });
+        }
+      } else if(e.key === 'Enter') {
+        e.preventDefault();
+        const selectedItem = items.find(item => item.classList.contains('selected')) || items[0];
+        if(selectedItem) {
+          const textSpan = selectedItem.querySelector('span');
+          if(textSpan) {
+            const rawText = textSpan.innerText;
+            const matchName = rawText.split('] ')[1]?.split(' (')[0] || rawText;
+            inputEl.value = matchName;
+          }
+          dropdown.classList.add('hidden');
+        }
+      }
+    }
+
+    function saveNewIngRow() {
+      const name = document.getElementById('new-ing-name').value.trim();
+      const price = parseFloat(document.getElementById('new-ing-price').value.replace(/,/g, '')) || 0;
+      const capacity = parseFloat(document.getElementById('new-ing-capacity').value.replace(/,/g, '')) || 0;
+
+      if(!name || price <= 0 || capacity <= 0) {
+        alert('항목명, 구입 가격, 구입 용량을 올바르게 입력해주세요.');
+        return;
+      }
+
+      const existing = ingredients.find(i => i.name.toLowerCase() === name.toLowerCase());
+      if(existing) {
+        if(!confirm(`"${name}" 항목이 이미 DB에 존재합니다. 그래도 추가하시겠습니까?`)) {
+          return;
+        }
+      }
+
+      const newObj = {
+        id: 'i_' + Date.now(),
+        type: document.getElementById('new-ing-type').value,
+        name: name,
+        vendor: document.getElementById('new-ing-vendor').value.trim(),
+        price: price,
+        capacity: capacity,
+        unit: document.getElementById('new-ing-unit').value,
+        yieldPct: parseFloat(document.getElementById('new-ing-yield').value.replace(/,/g, '')) || 100
+      };
+
+      ingredients.unshift(newObj);
+      saveData();
+      renderIngredientTable();
+      renderRecipesOverview();
+    }
+
+    function cancelNewIngRow() {
+      const row = document.getElementById('new-ing-row');
+      if(row) row.remove();
+    }
+
+    function renderSubRecipes() {
+      const container = document.getElementById('sub-recipes-container');
+      container.innerHTML = '';
+
+      if(subRecipes.length === 0) {
+        container.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 text-xs">등록된 수제 베이스 레시피가 없습니다. 하단 버튼을 통해 만들어 보세요!</div>';
+        return;
+      }
+
+      subRecipes.forEach(sub => {
+        const metrics = getSubRecipeMetrics(sub);
+        const card = document.createElement('div');
+        card.className = 'bg-amber-50/40 rounded-xl border border-amber-200 shadow-sm p-4 flex flex-col justify-between space-y-3';
+
+        let itemsHtml = '';
+        sub.items.forEach(item => {
+          const ing = ingredients.find(i => i.id === item.ingId);
+          if(!ing) return;
+          const cost = Math.round(getUnitCost(ing) * item.amount);
+          itemsHtml += `
+            <div class="flex justify-between text-xs py-1 border-b border-amber-100">
+              <span class="text-slate-700 font-medium">${ing.name} (${item.amount}${ing.unit})</span>
+              <span class="font-bold text-slate-800">${cost.toLocaleString()}원</span>
+            </div>
+          `;
+        });
+
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <span class="text-[10px] font-bold px-2 py-0.5 bg-amber-200 text-amber-900 rounded">수제 베이스</span>
+                <h3 class="font-bold text-slate-800 text-base mt-1">${sub.name}</h3>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] text-slate-500 block">단위당 원가</span>
+                <span class="text-base font-extrabold text-amber-900">${metrics.unitCost.toFixed(2)}원 / ${sub.unit}</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-500 mb-2">1회 완성 분량: <strong>${sub.outputCapacity}${sub.unit}</strong> (총 원가 ${metrics.totalCost.toLocaleString()}원)</p>
+            <div class="bg-white/80 p-2 rounded-lg border border-amber-100 space-y-1">${itemsHtml}</div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2 border-t border-amber-200">
+            <button onclick="editSubRecipe('${sub.id}')" class="bg-amber-700 text-white px-2.5 py-1 rounded text-xs font-bold hover:bg-amber-800">편집</button>
+            <button onclick="deleteSubRecipe('${sub.id}')" class="text-red-500 hover:bg-amber-100 px-2 py-1 rounded text-xs font-bold">삭제</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openSubRecipeModal() {
+      document.getElementById('sub-id').value = '';
+      document.getElementById('sub-name').value = '';
+      document.getElementById('sub-output-capacity').value = '';
+      document.getElementById('sub-unit').value = 'g';
+      document.getElementById('sub-rows-body').innerHTML = '';
+      
+      addSubIngredientRow();
+      addSubIngredientRow();
+      
+      document.getElementById('sub-recipe-modal').classList.remove('hidden');
+      calculateSubRecipeModalTotals();
+    }
+
+    function closeSubRecipeModal() {
+      document.getElementById('sub-recipe-modal').classList.add('hidden');
+    }
+
+    function addSubIngredientRow(selectedIngId = '', amount = '') {
+      const tbody = document.getElementById('sub-rows-body');
+      const tr = document.createElement('tr');
+      tr.className = 'sub-ing-row border-b border-slate-200 relative';
+
+      const ing = ingredients.find(i => i.id === selectedIngId);
+
+      tr.innerHTML = `
+        <td class="py-1.5 px-1 relative">
+          <input type="hidden" class="sub-ing-id" value="${selectedIngId}">
+          <input type="text" class="sub-ing-search w-full text-xs p-1.5 border border-slate-300 rounded font-medium" value="${ing ? ing.name : ''}" placeholder="원재료 검색 (방향키/엔터)..." oninput="handleSubIngInput(this)" onkeydown="handleSubIngKeydown(event, this)" onfocus="handleSubIngInput(this)">
+          <div class="sub-ing-dropdown hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 max-h-40 overflow-y-auto"></div>
+        </td>
+        <td class="py-1.5 px-1">
+          <div class="flex items-center gap-1">
+            <input type="text" value="${amount}" oninput="calculateSubRecipeModalTotals()" class="plus-shortcut sub-ing-amount w-full text-xs p-1.5 text-right border border-slate-300 rounded font-bold">
+            <span class="sub-ing-unit text-[10px] text-slate-500 w-4">${ing ? ing.unit : 'g'}</span>
+          </div>
+        </td>
+        <td class="py-1.5 px-1 text-right font-bold text-slate-700 sub-ing-cost">0원</td>
+        <td class="py-1.5 px-1 text-center"><button type="button" onclick="this.closest('tr').remove(); calculateSubRecipeModalTotals();" class="text-red-400 p-1"><i class="fa-solid fa-xmark"></i></button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function handleSubIngInput(inputEl) {
+      const query = inputEl.value.trim().toLowerCase();
+      const row = inputEl.closest('tr');
+      const dropdown = row.querySelector('.sub-ing-dropdown');
+
+      const matches = ingredients.filter(i => i.name.toLowerCase().includes(query));
+
+      if(matches.length === 0) {
+        dropdown.innerHTML = '<div class="p-2 text-xs text-slate-400">검색 결과가 없습니다</div>';
+        dropdown.classList.add('hidden');
+      } else {
+        dropdown.innerHTML = '';
+        matches.forEach((ing, idx) => {
+          const div = document.createElement('div');
+          div.className = `dropdown-item p-2 hover:bg-amber-50 cursor-pointer text-xs flex justify-between items-center border-b border-slate-100 ${idx === 0 ? 'selected' : ''}`;
+          div.dataset.ingId = ing.id;
+          div.innerHTML = `<span class="font-bold text-slate-800">[${ing.type}] ${ing.name} ${ing.vendor ? `(${ing.vendor})`:''}</span><span class="text-[10px] text-slate-400">${ing.price}원/${ing.capacity}${ing.unit}</span>`;
+          div.onclick = () => selectSubIngItem(row, ing);
+          dropdown.appendChild(div);
+        });
+        dropdown.classList.remove('hidden');
+      }
+    }
+
+    function handleSubIngKeydown(e, inputEl) {
+      const row = inputEl.closest('tr');
+      const dropdown = row.querySelector('.sub-ing-dropdown');
+      if(!dropdown || dropdown.classList.contains('hidden')) return;
+
+      const items = Array.from(dropdown.querySelectorAll('.dropdown-item'));
+      if(items.length === 0) return;
+
+      let currentIndex = items.findIndex(item => item.classList.contains('selected'));
+
+      if(e.key === 'ArrowDown') {
+        e.preventDefault();
+        if(currentIndex < items.length - 1) {
+          if(currentIndex >= 0) items[currentIndex].classList.remove('selected');
+          items[currentIndex + 1].classList.add('selected');
+          items[currentIndex + 1].scrollIntoView({ block: 'nearest' });
+        }
+      } else if(e.key === 'ArrowUp') {
+        e.preventDefault();
+        if(currentIndex > 0) {
+          items[currentIndex].classList.remove('selected');
+          items[currentIndex - 1].classList.add('selected');
+          items[currentIndex - 1].scrollIntoView({ block: 'nearest' });
+        }
+      } else if(e.key === 'Enter') {
+        e.preventDefault();
+        const selectedItem = items.find(item => item.classList.contains('selected')) || items[0];
+        if(selectedItem) {
+          const ingId = selectedItem.dataset.ingId;
+          const ing = ingredients.find(i => i.id === ingId);
+          if(ing) {
+            selectSubIngItem(row, ing);
+            const amountInput = row.querySelector('.sub-ing-amount');
+            if(amountInput) amountInput.focus();
+          }
+        }
+      }
+    }
+
+    function selectSubIngItem(row, ing) {
+      row.querySelector('.sub-ing-id').value = ing.id;
+      row.querySelector('.sub-ing-search').value = ing.name;
+      row.querySelector('.sub-ing-unit').innerText = ing.unit;
+      row.querySelector('.sub-ing-dropdown').classList.add('hidden');
+      calculateSubRecipeModalTotals();
+    }
+
+    function calculateSubRecipeModalTotals() {
+      let grandTotal = 0;
+      document.querySelectorAll('.sub-ing-row').forEach(row => {
+        const ingId = row.querySelector('.sub-ing-id').value;
+        const amount = parseFloat(row.querySelector('.sub-ing-amount').value.replace(/,/g, '')) || 0;
+        const costCell = row.querySelector('.sub-ing-cost');
+
+        const ing = ingredients.find(i => i.id === ingId);
+        if(ing && amount > 0) {
+          const lineCost = Math.round(getUnitCost(ing) * amount);
+          grandTotal += lineCost;
+          costCell.innerText = `${lineCost.toLocaleString()}원`;
+        } else {
+          costCell.innerText = '0원';
+        }
+      });
+
+      const outputCap = parseFloat(document.getElementById('sub-output-capacity').value.replace(/,/g, '')) || 0;
+      const unit = document.getElementById('sub-unit').value;
+      const unitCost = outputCap > 0 ? (grandTotal / outputCap) : 0;
+
+      document.getElementById('sub-total-cost-display').innerText = `${grandTotal.toLocaleString()}원`;
+      document.getElementById('sub-unit-cost-display').innerText = `${unitCost.toFixed(2)}원 / ${unit}`;
+    }
+
+    function saveSubRecipe() {
+      const id = document.getElementById('sub-id').value || 'sub_' + Date.now();
+      const name = document.getElementById('sub-name').value.trim();
+      const outputCapacity = parseFloat(document.getElementById('sub-output-capacity').value.replace(/,/g, '')) || 0;
+      const unit = document.getElementById('sub-unit').value;
+
+      if(!name || outputCapacity <= 0) {
+        alert('수제 베이스 명칭과 완성 용량을 올바르게 입력해주세요.');
+        return;
+      }
+
+      const items = [];
+      document.querySelectorAll('.sub-ing-row').forEach(row => {
+        const ingId = row.querySelector('.sub-ing-id').value;
+        const amount = parseFloat(row.querySelector('.sub-ing-amount').value.replace(/,/g, '')) || 0;
+        if(ingId && amount > 0) {
+          items.push({ ingId, amount });
+        }
+      });
+
+      if(items.length === 0) {
+        alert('최소 1개 이상의 원재료를 등록해주세요.');
+        return;
+      }
+
+      const idx = subRecipes.findIndex(s => s.id === id);
+      const newObj = { id, name, outputCapacity, unit, items };
+
+      if(idx >= 0) subRecipes[idx] = newObj;
+      else subRecipes.push(newObj);
+
+      saveData();
+      renderSubRecipes();
+      renderRecipesOverview();
+      closeSubRecipeModal();
+    }
+
+    function editSubRecipe(id) {
+      const sub = subRecipes.find(s => s.id === id);
+      if(!sub) return;
+
+      document.getElementById('sub-id').value = sub.id;
+      document.getElementById('sub-name').value = sub.name;
+      document.getElementById('sub-output-capacity').value = sub.outputCapacity;
+      document.getElementById('sub-unit').value = sub.unit;
+
+      const tbody = document.getElementById('sub-rows-body');
+      tbody.innerHTML = '';
+      sub.items.forEach(item => addSubIngredientRow(item.ingId, item.amount));
+
+      document.getElementById('sub-recipe-modal').classList.remove('hidden');
+      calculateSubRecipeModalTotals();
+    }
+
+    function deleteSubRecipe(id) {
+      if(confirm('이 수제 베이스 레시피를 삭제하시겠습니까?')) {
+        subRecipes = subRecipes.filter(s => s.id !== id);
+        saveData();
+        renderSubRecipes();
+        renderRecipesOverview();
+      }
+    }
+
+    function openBatchAddModal() {
+      const container = document.getElementById('batch-add-container');
+      container.classList.remove('hidden');
+      const tbody = document.getElementById('batch-rows-body');
+      tbody.innerHTML = '';
+      addBatchRow();
+      addBatchRow();
+      addBatchRow();
+    }
+
+    function closeBatchAddModal() {
+      document.getElementById('batch-add-container').classList.add('hidden');
+    }
+
+    function addBatchRow() {
+      const tbody = document.getElementById('batch-rows-body');
+      const tr = document.createElement('tr');
+      tr.className = 'batch-row border-b border-emerald-200 relative';
+      tr.innerHTML = `
+        <td class="p-2">
+          <select class="batch-type w-full text-xs p-1 border border-emerald-300 rounded font-bold text-emerald-900">
+            <option value="원재료">원재료</option>
+            <option value="부자재">부자재</option>
+          </select>
+        </td>
+        <td class="p-2 min-w-[160px] relative">
+          <input type="text" placeholder="항목명 *" oninput="handleBatchIngInput(this)" onkeydown="handleBatchIngKeydown(event, this)" onfocus="handleBatchIngInput(this)" class="batch-name w-full min-w-[150px] text-xs p-1 border border-emerald-300 rounded font-bold">
+          <div class="batch-dropdown hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 max-h-40 overflow-y-auto"></div>
+        </td>
+        <td class="p-2"><input type="text" placeholder="구매처" class="batch-vendor w-full text-xs p-1 border border-emerald-300 rounded"></td>
+        <td class="p-2 text-right"><input type="text" placeholder="금액 *" class="plus-shortcut batch-price w-full text-xs p-1 text-right border border-emerald-300 rounded font-bold"></td>
+        <td class="p-2 text-right"><input type="text" placeholder="용량 *" class="plus-shortcut batch-capacity w-full text-xs p-1 text-right border border-emerald-300 rounded"></td>
+        <td class="p-2">
+          <select class="batch-unit w-full text-xs p-1 border border-emerald-300 rounded">
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="개">개</option>
+            <option value="장">장</option>
+          </select>
+        </td>
+        <td class="p-2 text-right"><input type="text" value="100" class="plus-shortcut batch-yield w-full text-xs p-1 text-right border border-emerald-300 rounded"></td>
+        <td class="p-2 text-center"><button type="button" onclick="this.closest('tr').remove()" class="text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-xmark"></i></button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function handleBatchIngInput(inputEl) {
+      const query = inputEl.value.trim().toLowerCase();
+      const row = inputEl.closest('tr');
+      const dropdown = row.querySelector('.batch-dropdown');
+      if(!dropdown) return;
+
+      if(!query) {
+        dropdown.classList.add('hidden');
+        inputEl.classList.remove('border-emerald-600', 'bg-emerald-100/50');
+        return;
+      }
+
+      const matches = ingredients.filter(i => i.name.toLowerCase().includes(query));
+
+      if(matches.length === 0) {
+        dropdown.classList.add('hidden');
+        inputEl.classList.add('border-emerald-600', 'bg-emerald-100/50');
+      } else {
+        inputEl.classList.remove('border-emerald-600', 'bg-emerald-100/50');
+        dropdown.innerHTML = '<div class="p-1.5 text-[10px] bg-amber-100 text-amber-900 font-bold">⚠️ 기존 등록된 유사 항목이 있습니다:</div>';
+        matches.forEach((ing, idx) => {
+          const itemDiv = document.createElement('div');
+          itemDiv.className = `dropdown-item p-2 hover:bg-amber-50 cursor-pointer text-xs flex justify-between items-center border-b border-slate-100 ${idx === 0 ? 'selected' : ''}`;
+          itemDiv.innerHTML = `<span class="font-bold text-slate-800">[${ing.type}] ${ing.name} ${ing.vendor ? `(${ing.vendor})`:''}</span><span class="text-[10px] text-slate-400">${ing.price}원/${ing.capacity}${ing.unit}</span>`;
+          itemDiv.onclick = () => {
+            inputEl.value = ing.name;
+            dropdown.classList.add('hidden');
+          };
+          dropdown.appendChild(itemDiv);
+        });
+        dropdown.classList.remove('hidden');
+      }
+    }
+
+    function handleBatchIngKeydown(e, inputEl) {
+      const row = inputEl.closest('tr');
+      const dropdown = row.querySelector('.batch-dropdown');
+      if(!dropdown || dropdown.classList.contains('hidden')) return;
+
+      const items = Array.from(dropdown.querySelectorAll('.dropdown-item'));
+      if(items.length === 0) return;
+
+      let currentIndex = items.findIndex(item => item.classList.contains('selected'));
+
+      if(e.key === 'ArrowDown') {
+        e.preventDefault();
+        if(currentIndex < items.length - 1) {
+          if(currentIndex >= 0) items[currentIndex].classList.remove('selected');
+          items[currentIndex + 1].classList.add('selected');
+          items[currentIndex + 1].scrollIntoView({ block: 'nearest' });
+        }
+      } else if(e.key === 'ArrowUp') {
+        e.preventDefault();
+        if(currentIndex > 0) {
+          items[currentIndex].classList.remove('selected');
+          items[currentIndex - 1].classList.add('selected');
+          items[currentIndex - 1].scrollIntoView({ block: 'nearest' });
+        }
+      } else if(e.key === 'Enter') {
+        e.preventDefault();
+        const selectedItem = items.find(item => item.classList.contains('selected')) || items[0];
+        if(selectedItem) {
+          const textSpan = selectedItem.querySelector('span');
+          if(textSpan) {
+            const rawText = textSpan.innerText;
+            const matchName = rawText.split('] ')[1]?.split(' (')[0] || rawText;
+            inputEl.value = matchName;
+          }
+          dropdown.classList.add('hidden');
+        }
+      }
+    }
+
+    function saveBatchRows() {
+      const rows = document.querySelectorAll('.batch-row');
+      let count = 0;
+
+      rows.forEach(row => {
+        const name = row.querySelector('.batch-name').value.trim();
+        const price = parseFloat(row.querySelector('.batch-price').value.replace(/,/g, '')) || 0;
+        const capacity = parseFloat(row.querySelector('.batch-capacity').value.replace(/,/g, '')) || 0;
+
+        if(name && price > 0 && capacity > 0) {
+          const newObj = {
+            id: 'i_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            type: row.querySelector('.batch-type').value,
+            name: name,
+            vendor: row.querySelector('.batch-vendor').value.trim(),
+            price: price,
+            capacity: capacity,
+            unit: row.querySelector('.batch-unit').value,
+            yieldPct: parseFloat(row.querySelector('.batch-yield').value.replace(/,/g, '')) || 100
+          };
+          ingredients.unshift(newObj);
+          count++;
+        }
+      });
+
+      if(count > 0) {
+        saveData();
+        renderIngredientTable();
+        renderRecipesOverview();
+        closeBatchAddModal();
+        alert(`${count}개의 항목이 성공적으로 일괄 등록되었습니다!`);
+      } else {
+        alert('올바르게 입력된 항목이 없습니다.');
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.batch-name') && !e.target.closest('#new-ing-name')) {
+        const bDrop = document.getElementById('new-ing-dropdown');
+        if(bDrop) bDrop.classList.add('hidden');
+        document.querySelectorAll('.batch-dropdown').forEach(el => el.classList.add('hidden'));
+      }
+      if (!e.target.closest('.sub-ing-search')) {
+        document.querySelectorAll('.sub-ing-dropdown').forEach(el => el.classList.add('hidden'));
+      }
+    });
+
+    function updateIngField(id, field, value) {
+      const ing = ingredients.find(i => i.id === id);
+      if(!ing) return;
+
+      if(field === 'price' || field === 'capacity' || field === 'yieldPct') {
+        ing[field] = parseFloat(value.toString().replace(/,/g, '')) || 0;
+      } else {
+        ing[field] = value;
+      }
+
+      saveData();
+      renderIngredientTable();
+      renderRecipesOverview();
+    }
+
+    function deleteIngredient(id) {
+      if(confirm('이 항목을 DB에서 삭제하시겠습니까?')) {
+        ingredients = ingredients.filter(i => i.id !== id);
+        saveData();
+        renderIngredientTable();
+        renderRecipesOverview();
+      }
+    }
+
+    function renderDashboard() {
+      document.getElementById('kpi-total-count').innerText = `${menus.length}개`;
+      let storeRateSum = 0, delivRateSum = 0, storePriceSum = 0, delivPriceSum = 0, warnCount = 0;
+
+      menus.forEach(m => {
+        const metrics = calculateMenuMetrics(m);
+        storeRateSum += metrics.storeCostRate;
+        delivRateSum += metrics.delivCostRate;
+        storePriceSum += metrics.price;
+        delivPriceSum += metrics.delivPrice;
+        if(metrics.storeCostRate > 30 || metrics.delivCostRate > 30) warnCount++;
+      });
+
+      const count = menus.length;
+      const avgStoreRate = count > 0 ? (storeRateSum / count).toFixed(1) : 0;
+      const avgDelivRate = count > 0 ? (delivRateSum / count).toFixed(1) : 0;
+      const avgStorePrice = count > 0 ? Math.round(storePriceSum / count) : 0;
+      const avgDelivPrice = count > 0 ? Math.round(delivPriceSum / count) : 0;
+
+      document.getElementById('kpi-avg-cost-rate').innerText = `${avgStoreRate}% / ${avgDelivRate}%`;
+      document.getElementById('kpi-avg-price').innerText = `${avgStorePrice.toLocaleString()}원 / ${avgDelivPrice.toLocaleString()}원`;
+      document.getElementById('kpi-warn-count').innerText = `${warnCount}개`;
+
+      const tbody = document.getElementById('menu-table-body');
+      tbody.innerHTML = '';
+
+      const sortedMenus = [...menus].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      sortedMenus.forEach(m => {
+        const metrics = calculateMenuMetrics(m);
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="p-3"><span class="px-2 py-0.5 rounded text-[11px] ${getCategoryBadgeStyle(m.category)}">${m.category}</span></td>
+          <td class="p-3 font-bold text-slate-800">${m.name}</td>
+          <td class="p-3 text-right font-bold text-slate-700">${metrics.totalCost.toLocaleString()}원</td>
+          <td class="p-3 text-right text-amber-900 bg-amber-50/30 font-bold">${m.price.toLocaleString()}원</td>
+          <td class="p-3 text-right font-bold bg-amber-50/30 ${metrics.storeCostRate > 30 ? 'text-red-500':'text-emerald-700'}">${metrics.storeCostRate.toFixed(1)}%</td>
+          <td class="p-3 text-right text-sky-900 bg-sky-50/30 font-bold">${m.deliveryPrice.toLocaleString()}원</td>
+          <td class="p-3 text-right font-bold bg-sky-50/30 ${metrics.delivCostRate > 30 ? 'text-red-500':'text-emerald-700'}">${metrics.delivCostRate.toFixed(1)}%</td>
+          <td class="p-3 text-center space-x-1">
+            <button onclick="editRecipe('${m.id}')" class="p-1 text-blue-600"><i class="fa-solid fa-pen"></i></button>
+            <button onclick="deleteRecipe('${m.id}')" class="p-1 text-red-500"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      renderChart();
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('costChart').getContext('2d');
+      if(chartInstance) chartInstance.destroy();
+
+      const sortedMenus = [...menus].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sortedMenus.map(m => m.name),
+          datasets: [
+            {
+              label: '매장 원가율 (%)',
+              data: sortedMenus.map(m => calculateMenuMetrics(m).storeCostRate.toFixed(1)),
+              backgroundColor: '#f59e0b',
+              borderRadius: 4
+            },
+            {
+              label: '배달 원가율 (%)',
+              data: sortedMenus.map(m => calculateMenuMetrics(m).delivCostRate.toFixed(1)),
+              backgroundColor: '#0284c7',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false, 
+          plugins: { legend: { display: true, position: 'top' } } 
+        }
+      });
+    }
+
+    function openNewRecipeModal() {
+      document.getElementById('recipe-id').value = '';
+      document.getElementById('recipe-order').value = menus.length;
+      document.getElementById('recipe-name').value = '';
+      document.getElementById('recipe-category').value = '커피';
+      document.getElementById('recipe-price').value = 5000;
+      document.getElementById('recipe-delivery-price').value = 5500;
+      document.getElementById('recipe-rows-body').innerHTML = '';
+      addRecipeRow();
+      switchTab('recipe-editor');
+      calculateRecipeTotals();
+    }
+
+    function editRecipe(id) {
+      const menu = menus.find(m => m.id === id);
+      if(!menu) return;
+
+      document.getElementById('recipe-id').value = menu.id;
+      document.getElementById('recipe-order').value = menu.order ?? 0;
+      document.getElementById('recipe-name').value = menu.name;
+      document.getElementById('recipe-category').value = menu.category;
+      document.getElementById('recipe-price').value = menu.price;
+      document.getElementById('recipe-delivery-price').value = menu.deliveryPrice || menu.price;
+
+      const tbody = document.getElementById('recipe-rows-body');
+      tbody.innerHTML = '';
+      menu.items.forEach(item => addRecipeRow(item.ingId, item.amount));
+
+      switchTab('recipe-editor');
+      calculateRecipeTotals();
+    }
+
+    function getCombinedSearchableItems(currentMenuId = '') {
+      const list = [];
+      ingredients.forEach(i => {
+        list.push({
+          id: i.id,
+          name: i.name,
+          type: i.type,
+          unit: i.unit,
+          vendor: i.vendor,
+          priceText: `${i.price}원/${i.capacity}${i.unit}`
+        });
+      });
+      subRecipes.forEach(s => {
+        const metrics = getSubRecipeMetrics(s);
+        list.push({
+          id: s.id,
+          name: s.name,
+          type: '수제베이스',
+          unit: s.unit,
+          vendor: '자체제조',
+          priceText: `${metrics.unitCost.toFixed(2)}원/${s.unit}`
+        });
+      });
+      menus.forEach(m => {
+        if (m.id !== currentMenuId) {
+          const menuCost = getMenuTotalCost(m.id);
+          list.push({
+            id: m.id,
+            name: m.name,
+            type: '단품메뉴',
+            unit: '개',
+            vendor: '등록메뉴',
+            priceText: `원가 ${menuCost.toLocaleString()}원/개`
+          });
+        }
+      });
+      return list;
+    }
+
+    function addRecipeRow(selectedIngId = '', amount = '') {
+      const tbody = document.getElementById('recipe-rows-body');
+      const tr = document.createElement('tr');
+      tr.className = 'recipe-row border-b border-slate-100';
+
+      const itemInfo = getItemInfo(selectedIngId);
+
+      tr.innerHTML = `
+        <td class="py-2 px-1 relative">
+          <input type="hidden" class="ing-id-hidden" value="${selectedIngId}">
+          <input type="text" class="ing-search-input w-full text-xs p-2 border border-slate-300 rounded-lg font-medium" value="${itemInfo ? itemInfo.name : ''}" placeholder="원재료/부자재/수제베이스/단품메뉴 타이핑..." oninput="handleIngInput(this)" onkeydown="handleIngKeydown(event, this)" onfocus="handleIngInput(this)">
+          <div class="ing-dropdown-results hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 max-h-40 overflow-y-auto"></div>
+        </td>
+        <td class="py-2 px-1 text-center"><span class="ing-type-label text-[10px] px-1.5 py-0.5 rounded ${itemInfo && itemInfo.type === '수제베이스' ? 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold' : itemInfo && itemInfo.type === '단품메뉴' ? 'bg-sky-100 text-sky-900 border border-sky-300 font-extrabold' : 'bg-slate-100'}">${itemInfo ? itemInfo.type : '-'}</span></td>
+        <td class="py-2 px-1"><input type="text" data-type="numeric" value="${amount}" oninput="calculateRecipeTotals()" placeholder="0" class="plus-shortcut ing-amount w-full text-xs p-2 border border-slate-300 rounded-lg font-bold"></td>
+        <td class="py-2 px-1 text-center ing-unit-label text-slate-500">${itemInfo ? itemInfo.unit : '-'}</td>
+        <td class="py-2 px-1 text-right font-bold text-slate-700 ing-cost-calculated">0원</td>
+        <td class="py-2 px-1 text-center"><button type="button" onclick="removeRecipeRow(this)" class="text-red-400 p-1"><i class="fa-solid fa-xmark"></i></button></td>
+      `;
+      tbody.appendChild(tr);
+      calculateRecipeTotals();
+    }
+
+    function handleIngInput(inputEl) {
+      const query = inputEl.value.trim().toLowerCase();
+      const row = inputEl.closest('tr');
+      const dropdown = row.querySelector('.ing-dropdown-results');
+      const currentMenuId = document.getElementById('recipe-id').value;
+
+      const allItems = getCombinedSearchableItems(currentMenuId);
+      const matches = allItems.filter(i => i.name.toLowerCase().includes(query));
+
+      if(matches.length === 0) {
+        dropdown.innerHTML = '<div class="p-2 text-xs text-slate-400">검색 결과가 없습니다</div>';
+        dropdown.classList.add('hidden');
+      } else {
+        dropdown.innerHTML = '';
+        matches.forEach((item, idx) => {
+          const itemDiv = document.createElement('div');
+          itemDiv.className = `dropdown-item p-2 hover:bg-amber-50 cursor-pointer text-xs flex justify-between items-center border-b border-slate-100 ${idx === 0 ? 'selected' : ''}`;
+          itemDiv.dataset.ingId = item.id;
+          itemDiv.innerHTML = `<span class="font-bold text-slate-800">[${item.type}] ${item.name} ${item.vendor ? `(${item.vendor})`:''}</span><span class="text-[10px] text-slate-400">${item.priceText}</span>`;
+          itemDiv.onclick = () => selectIngItem(row, item);
+          dropdown.appendChild(itemDiv);
+        });
+        dropdown.classList.remove('hidden');
+      }
+    }
+
+    function handleIngKeydown(e, inputEl) {
+      const row = inputEl.closest('tr');
+      const dropdown = row.querySelector('.ing-dropdown-results');
+      if(dropdown.classList.contains('hidden')) return;
+
+      const items = Array.from(dropdown.querySelectorAll('.dropdown-item'));
+      if(items.length === 0) return;
+
+      let currentIndex = items.findIndex(item => item.classList.contains('selected'));
+
+      if(e.key === 'ArrowDown') {
+        e.preventDefault();
+        if(currentIndex < items.length - 1) {
+          if(currentIndex >= 0) items[currentIndex].classList.remove('selected');
+          items[currentIndex + 1].classList.add('selected');
+          items[currentIndex + 1].scrollIntoView({ block: 'nearest' });
+        }
+      } else if(e.key === 'ArrowUp') {
+        e.preventDefault();
+        if(currentIndex > 0) {
+          items[currentIndex].classList.remove('selected');
+          items[currentIndex - 1].classList.add('selected');
+          items[currentIndex - 1].scrollIntoView({ block: 'nearest' });
+        }
+      } else if(e.key === 'Enter') {
+        e.preventDefault();
+        const selectedItem = items.find(item => item.classList.contains('selected')) || items[0];
+        if(selectedItem) {
+          const ingId = selectedItem.dataset.ingId;
+          const currentMenuId = document.getElementById('recipe-id').value;
+          const allItems = getCombinedSearchableItems(currentMenuId);
+          const item = allItems.find(i => i.id === ingId);
+          if(item) {
+            selectIngItem(row, item);
+            const amountInput = row.querySelector('.ing-amount');
+            if(amountInput) amountInput.focus();
+          }
+        }
+      }
+    }
+
+    function selectIngItem(row, item) {
+      row.querySelector('.ing-id-hidden').value = item.id;
+      row.querySelector('.ing-search-input').value = item.name;
+      
+      const typeLabel = row.querySelector('.ing-type-label');
+      typeLabel.innerText = item.type;
+      if(item.type === '수제베이스') {
+        typeLabel.className = 'ing-type-label text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-extrabold';
+      } else if(item.type === '단품메뉴') {
+        typeLabel.className = 'ing-type-label text-[10px] px-1.5 py-0.5 rounded bg-sky-100 text-sky-900 border border-sky-300 font-extrabold';
+      } else {
+        typeLabel.className = 'ing-type-label text-[10px] px-1.5 py-0.5 rounded bg-slate-100';
+      }
+
+      row.querySelector('.ing-unit-label').innerText = item.unit;
+      row.querySelector('.ing-dropdown-results').classList.add('hidden');
+      calculateRecipeTotals();
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.ing-search-input')) {
+        document.querySelectorAll('.ing-dropdown-results').forEach(el => el.classList.add('hidden'));
+      }
+      if (!e.target.closest('.sub-ing-search')) {
+        document.querySelectorAll('.sub-ing-dropdown').forEach(el => el.classList.add('hidden'));
+      }
+    });
+
+    function removeRecipeRow(btn) {
+      btn.closest('tr').remove();
+      calculateRecipeTotals();
+    }
+
+    function calculateRecipeTotals() {
+      let ingTotal = 0;
+      let pkgTotal = 0;
+
+      document.querySelectorAll('.recipe-row').forEach(row => {
+        const ingId = row.querySelector('.ing-id-hidden').value;
+        const amount = parseFloat(row.querySelector('.ing-amount').value.replace(/,/g, '')) || 0;
+        const costCell = row.querySelector('.ing-cost-calculated');
+
+        const itemInfo = getItemInfo(ingId);
+        if(itemInfo && amount > 0) {
+          const lineCost = Math.round(itemInfo.unitCost * amount);
+          if(itemInfo.type === '부자재') pkgTotal += lineCost;
+          else ingTotal += lineCost;
+          costCell.innerText = `${lineCost.toLocaleString()}원`;
+        } else {
+          costCell.innerText = '0원';
+        }
+      });
+
+      const storePrice = parseFloat(document.getElementById('recipe-price').value.replace(/,/g, '')) || 0;
+      const delivPrice = parseFloat(document.getElementById('recipe-delivery-price').value.replace(/,/g, '')) || 0;
+      const grandCost = ingTotal + pkgTotal;
+
+      const storeMargin = storePrice - grandCost;
+      const storeCostRate = storePrice > 0 ? ((grandCost / storePrice) * 100).toFixed(1) : 0;
+
+      const delivMargin = delivPrice - grandCost;
+      const delivCostRate = delivPrice > 0 ? ((grandCost / delivPrice) * 100).toFixed(1) : 0;
+
+      document.getElementById('sum-ing-cost').innerText = `${ingTotal.toLocaleString()}원 / ${pkgTotal.toLocaleString()}원`;
+      document.getElementById('sum-total-cost').innerText = `${grandCost.toLocaleString()}원`;
+      document.getElementById('sum-store-rate').innerText = `${storeCostRate}% (${storeMargin.toLocaleString()}원)`;
+      document.getElementById('sum-deliv-rate').innerText = `${delivCostRate}% (${delivMargin.toLocaleString()}원)`;
+    }
+
+    function saveRecipe(e) {
+      e.preventDefault();
+      const id = document.getElementById('recipe-id').value || 'm_' + Date.now();
+      const order = parseInt(document.getElementById('recipe-order').value) || menus.length;
+      const name = document.getElementById('recipe-name').value;
+      const category = document.getElementById('recipe-category').value;
+      const price = parseFloat(document.getElementById('recipe-price').value.replace(/,/g, '')) || 0;
+      const deliveryPrice = parseFloat(document.getElementById('recipe-delivery-price').value.replace(/,/g, '')) || price;
+
+      const items = [];
+      document.querySelectorAll('.recipe-row').forEach(row => {
+        const ingId = row.querySelector('.ing-id-hidden').value;
+        const amount = parseFloat(row.querySelector('.ing-amount').value.replace(/,/g, '')) || 0;
+        if(ingId && amount > 0) items.push({ ingId, amount });
+      });
+
+      const idx = menus.findIndex(m => m.id === id);
+      const newObj = { id, order, name, category, price, deliveryPrice, items };
+
+      if(idx >= 0) {
+        newObj.order = menus[idx].order ?? idx;
+        menus[idx] = newObj;
+      } else {
+        menus.push(newObj);
+      }
+
+      saveData();
+      alert('레시피가 성공적으로 저장되었습니다!');
+      switchTab('recipes-view');
+    }
+
+    function deleteRecipe(id) {
+      if(confirm('이 레시피를 삭제하시겠습니까?')) {
+        menus = menus.filter(m => m.id !== id);
+        saveData();
+        renderRecipesOverview();
+      }
+    }
+
+    function initDeliverySelect() {
+      const select = document.getElementById('deliv-menu-select');
+      select.innerHTML = '';
+      menus.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.innerText = `[${m.category}] ${m.name} (배달가 ${m.deliveryPrice.toLocaleString()}원)`;
+        select.appendChild(opt);
+      });
+      if(menus.length > 0) {
+        document.getElementById('deliv-price').value = menus[0].deliveryPrice || menus[0].price;
+      }
+    }
+
+    function onDeliveryMenuChange() {
+      const menuId = document.getElementById('deliv-menu-select').value;
+      const menu = menus.find(m => m.id === menuId);
+      if(menu) {
+        document.getElementById('deliv-price').value = menu.deliveryPrice || menu.price;
+        updateDeliveryCalc();
+      }
+    }
+
+    function updateDeliveryCalc() {
+      const menuId = document.getElementById('deliv-menu-select').value;
+      const menu = menus.find(m => m.id === menuId);
+      if(!menu) return;
+
+      const delivPrice = parseFloat(document.getElementById('deliv-price').value.replace(/,/g, '')) || 0;
+      const extraPkg = parseFloat(document.getElementById('deliv-extra-pkg').value.replace(/,/g, '')) || 0;
+
+      const baseMetrics = calculateMenuMetrics(menu);
+      const totalRawCost = baseMetrics.totalCost + extraPkg;
+
+      const cardsContainer = document.getElementById('delivery-cards-container');
+      cardsContainer.innerHTML = '';
+
+      deliveryPlatforms.forEach(p => {
+        const appFee = Math.round(delivPrice * p.rate * 1.1);
+        const deliveryFee = Math.round(p.deliveryFee * 1.1);
+        const payFee = Math.round(delivPrice * p.payRate * 1.1);
+        
+        const totalDeductions = appFee + deliveryFee + payFee;
+        const finalNetMargin = delivPrice - totalDeductions - totalRawCost;
+        const marginPct = delivPrice > 0 ? ((finalNetMargin / delivPrice) * 100).toFixed(1) : 0;
+
+        const card = document.createElement('div');
+        card.className = `bg-white p-5 rounded-xl border-2 ${p.color} shadow-sm space-y-3 flex flex-col justify-between`;
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-bold text-xs px-2 py-1 bg-white rounded shadow-sm">${p.name}</span>
+              <span class="text-[10px] text-slate-500">중개 ${(p.rate*100).toFixed(1)}%</span>
+            </div>
+            <p class="text-xs text-slate-500">배달 정산 순마진</p>
+            <h3 class="text-2xl font-extrabold mt-0.5">${finalNetMargin.toLocaleString()}원</h3>
+            <p class="text-xs font-semibold mt-1">마진율: ${marginPct}%</p>
+          </div>
+          <div class="pt-3 border-t border-slate-200/60 text-[11px] space-y-1 text-slate-600">
+            <div class="flex justify-between"><span>중개수수료(부가세포함):</span><span>${appFee.toLocaleString()}원</span></div>
+            <div class="flex justify-between"><span>기본배달비(부가세포함):</span><span>${deliveryFee.toLocaleString()}원</span></div>
+            <div class="flex justify-between"><span>결제정산(부가세포함):</span><span>${payFee.toLocaleString()}원</span></div>
+            <div class="flex justify-between font-bold text-slate-800 pt-1 border-t border-slate-100"><span>총 차감액:</span><span>${totalDeductions.toLocaleString()}원</span></div>
+          </div>
+        `;
+        cardsContainer.appendChild(card);
+      });
+    }
+
+    function initOrderCalc() {
+      const tbody = document.getElementById('order-rows-body');
+      tbody.innerHTML = '';
+      if(menus.length > 0) {
+        addOrderMenuRow(menus[0].id, 1);
+        if(menus.length > 1) addOrderMenuRow(menus[1].id, 1);
+      }
+      calculateOrderMargin();
+    }
+
+    function addOrderMenuRow(selectedMenuId = '', qty = 1) {
+      const tbody = document.getElementById('order-rows-body');
+      const tr = document.createElement('tr');
+      tr.className = 'order-row border-b border-slate-100';
+
+      let optionsHtml = '';
+      menus.forEach(m => {
+        optionsHtml += `<option value="${m.id}" ${m.id === selectedMenuId ? 'selected':''}>[${m.category}] ${m.name} (배달가: ${(m.deliveryPrice || m.price).toLocaleString()}원)</option>`;
+      });
+
+      tr.innerHTML = `
+        <td class="p-2">
+          <select onchange="calculateOrderMargin()" class="order-menu-select w-full text-xs p-2 border border-slate-300 rounded-lg font-bold">${optionsHtml}</select>
+        </td>
+        <td class="p-2 text-center">
+          <input type="text" value="${qty}" oninput="calculateOrderMargin()" class="plus-shortcut order-qty w-16 text-center text-xs p-2 border border-slate-300 rounded-lg font-bold">
+        </td>
+        <td class="p-2 text-right order-unit-price font-bold text-amber-900">0원</td>
+        <td class="p-2 text-right order-line-total font-bold text-slate-800">0원</td>
+        <td class="p-2 text-center">
+          <button type="button" onclick="removeOrderRow(this)" class="text-red-400 hover:text-red-600 p-1"><i class="fa-solid fa-xmark"></i></button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+      calculateOrderMargin();
+    }
+
+    function removeOrderRow(btn) {
+      btn.closest('tr').remove();
+      calculateOrderMargin();
+    }
+
+    function calculateOrderMargin() {
+      const platformId = document.getElementById('order-platform').value;
+      const platform = deliveryPlatforms.find(p => p.id === platformId) || deliveryPlatforms[0];
+      const extraPkg = parseFloat(document.getElementById('order-extra-pkg').value.replace(/,/g, '')) || 0;
+
+      let totalOrderAmount = 0;
+      let orderItemsData = [];
+
+      document.querySelectorAll('.order-row').forEach(row => {
+        const menuId = row.querySelector('.order-menu-select').value;
+        const qty = parseFloat(row.querySelector('.order-qty').value.replace(/,/g, '')) || 0;
+        const menu = menus.find(m => m.id === menuId);
+
+        if(menu && qty > 0) {
+          const delivPrice = menu.deliveryPrice || menu.price;
+          const lineTotal = delivPrice * qty;
+          totalOrderAmount += lineTotal;
+
+          const metrics = calculateMenuMetrics(menu);
+          orderItemsData.push({
+            name: menu.name,
+            qty: qty,
+            price: delivPrice,
+            lineTotal: lineTotal,
+            unitCost: metrics.totalCost,
+            totalCost: metrics.totalCost * qty
+          });
+
+          row.querySelector('.order-unit-price').innerText = `${delivPrice.toLocaleString()}원`;
+          row.querySelector('.order-line-total').innerText = `${lineTotal.toLocaleString()}원`;
+        }
+      });
+
+      const totalAppFee = Math.round(totalOrderAmount * platform.rate * 1.1);
+      const totalDeliveryFee = Math.round(platform.deliveryFee * 1.1);
+      const totalPayFee = Math.round(totalOrderAmount * platform.payRate * 1.1);
+      const totalDeductions = totalAppFee + totalDeliveryFee + totalPayFee + extraPkg;
+      const finalNetProfit = totalOrderAmount - totalDeductions;
+
+      document.getElementById('order-total-price').innerText = `${totalOrderAmount.toLocaleString()}원`;
+      document.getElementById('order-total-deduct').innerText = `${totalDeductions.toLocaleString()}원`;
+      document.getElementById('order-final-net').innerText = `${finalNetProfit.toLocaleString()}원`;
+
+      const resultBody = document.getElementById('order-result-body');
+      resultBody.innerHTML = '';
+
+      orderItemsData.forEach(item => {
+        const weight = totalOrderAmount > 0 ? (item.lineTotal / totalOrderAmount) : 0;
+        const allocatedAppFee = Math.round((totalAppFee + totalPayFee) * weight);
+        const allocatedDeliveryFee = Math.round((totalDeliveryFee + extraPkg) * weight);
+        
+        const itemNetMargin = item.lineTotal - allocatedAppFee - allocatedDeliveryFee - item.totalCost;
+        const itemMarginPct = item.lineTotal > 0 ? ((itemNetMargin / item.lineTotal) * 100).toFixed(1) : 0;
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-slate-800">${item.name}</td>
+          <td class="p-3 text-center">${item.qty}개</td>
+          <td class="p-3 text-right">${item.lineTotal.toLocaleString()}원</td>
+          <td class="p-3 text-right text-orange-600">-${allocatedAppFee.toLocaleString()}원</td>
+          <td class="p-3 text-right text-orange-600">-${allocatedDeliveryFee.toLocaleString()}원</td>
+          <td class="p-3 text-right text-slate-500">-${item.totalCost.toLocaleString()}원</td>
+          <td class="p-3 text-right font-bold text-emerald-800">${itemNetMargin.toLocaleString()}원</td>
+          <td class="p-3 text-right font-bold ${itemNetMargin < 0 ? 'text-red-500':'text-slate-700'}">${itemMarginPct}%</td>
+        `;
+        resultBody.appendChild(tr);
+      });
+    }
+
+    function exportToExcel() {
+      let csvContent = "\uFEFF";
+
+      csvContent += "[원재료 및 부자재 DB]\n";
+      csvContent += "ID,구분,항목명,구매처,구입 가격(원),구입 용량,단위,수율(%)\n";
+      ingredients.forEach(i => {
+        csvContent += `"${i.id}","${i.type}","${i.name}","${i.vendor || ''}",${i.price},${i.capacity},"${i.unit}",${i.yieldPct}\n`;
+      });
+
+      csvContent += "\n[수제 베이스 / 서브 레시피 DB]\n";
+      csvContent += "ID,수제 베이스명,1회 완성량,단위,사용 원재료명,투입량\n";
+      subRecipes.forEach(s => {
+        s.items.forEach(item => {
+          const ing = ingredients.find(i => i.id === item.ingId);
+          if(ing) {
+            csvContent += `"${s.id}","${s.name}",${s.outputCapacity},"${s.unit}","${ing.name}",${item.amount}\n`;
+          }
+        });
+      });
+
+      csvContent += "\n[메뉴별 상세 레시피]\n";
+      csvContent += "카테고리,메뉴명,매장 판매가(원),배달 판매가(원),사용 재료/부자재/수제베이스명,투입량,단위\n";
+      menus.forEach(m => {
+        m.items.forEach(item => {
+          const itemInfo = getItemInfo(item.ingId);
+          if(itemInfo) {
+            csvContent += `"${m.category}","${m.name}",${m.price},${m.deliveryPrice || m.price},"${itemInfo.name}",${item.amount},"${itemInfo.unit}"\n`;
+          }
+        });
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cafe_recipe_data_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    function exportJSON() {
+      const payload = { ingredients, subRecipes, menus };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cafe_recipe_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    }
+
+    function importJSON(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = JSON.parse(evt.target.result);
+          if(data.ingredients && data.menus) {
+            ingredients = data.ingredients;
+            subRecipes = data.subRecipes || [];
+            menus = data.menus;
+            saveData();
+            renderRecipesOverview();
+            renderIngredientTable();
+            renderSubRecipes();
+            renderDashboard();
+            initDeliverySelect();
+            updateDeliveryCalc();
+            initOrderCalc();
+            alert('데이터를 성공적으로 불러왔습니다!');
+          }
+        } catch(err) {
+          alert('올바른 파일 형식이 아닙니다.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
