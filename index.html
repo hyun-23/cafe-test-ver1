@@ -206,7 +206,7 @@
       </div>
     </div>
 
-    <!-- TAB 4: 원재료 & 부자재 DB (수정됨: 테이블 최소 너비 및 입력칸 최소 너비 보완) -->
+    <!-- TAB 4: 원재료 & 부자재 DB -->
     <div id="view-ingredients" class="tab-content hidden space-y-6">
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-200 pb-4">
@@ -498,6 +498,28 @@
   </div>
 
   <script>
+    // 우클릭, 드래그, 개발자 도구 차단 스크립트
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+    });
+
+    document.addEventListener('selectstart', function(e) {
+      if (!e.target.matches('input, textarea')) {
+        e.preventDefault();
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (
+        e.key === 'F12' || 
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
+        (e.ctrlKey && e.key === 'U')
+      ) {
+        e.preventDefault();
+        alert('이 페이지에서는 해당 기능을 사용할 수 없습니다.');
+      }
+    });
+
     const defaultIngredients = [
       { id: 'i1', type: '원재료', name: '스페셜티 원두', vendor: '동서식품', price: 30000, capacity: 1000, unit: 'g', yieldPct: 90 },
       { id: 'i2', type: '원재료', name: '서울우유 1000ml', price: 2900, capacity: 1000, unit: 'ml', yieldPct: 100, vendor: '서울우유 대리점' },
@@ -510,8 +532,47 @@
       { id: 'p4', type: '부자재', name: '크로플 디저트 상자', price: 15000, capacity: 100, unit: '개', yieldPct: 100, vendor: '박스지인' }
     ];
 
-    const defaultSubRecipes = [];
-    const defaultMenus = [];
+    const defaultSubRecipes = [
+      {
+        id: 'sub_1',
+        name: '수제 바닐라 시럽',
+        outputCapacity: 1000,
+        unit: 'ml',
+        items: [
+          { ingId: 'i3', amount: 800 }
+        ]
+      }
+    ];
+
+    const defaultMenus = [
+      {
+        id: 'm_1',
+        order: 0,
+        name: '카페 라떼',
+        category: '커피',
+        price: 5000,
+        deliveryPrice: 5500,
+        items: [
+          { ingId: 'i1', amount: 20 },
+          { ingId: 'i2', amount: 200 },
+          { ingId: 'p1', amount: 1 },
+          { ingId: 'p2', amount: 1 },
+          { ingId: 'p3', amount: 1 }
+        ]
+      },
+      {
+        id: 'm_2',
+        order: 1,
+        name: '크로플',
+        category: '디저트',
+        price: 4500,
+        deliveryPrice: 5000,
+        items: [
+          { ingId: 'i5', amount: 1 },
+          { ingId: 'p4', amount: 1 }
+        ]
+      }
+    ];
 
     const deliveryPlatforms = [
       { id: 'baemin', name: '배달의민족', color: 'border-emerald-500 bg-emerald-50 text-emerald-800', rate: 0.068, deliveryFee: 2600, payRate: 0.03 },
