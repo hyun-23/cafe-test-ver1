@@ -3,31 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>카페 원가 & 레시피 스마트 관리 시스템</title>
+  <title>[얌의노트] 카페 원가 & 레시피 Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
+    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; position: relative; }
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     .dropdown-item.selected { background-color: #fef3c7 !important; color: #78350f !important; }
+
+    /* 💡 뱃지/태그 폭을 살짝 슬림하게 줄여서 레시피명이 더 돋보이도록 조정 */
+    .badge-fixed {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-width: 66px !important;
+      padding-left: 6px !important;
+      padding-right: 6px !important;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;      
+      text-align: center !important;
+      box-sizing: border-box !important;
+    }
+
+    /* 💡 은은한 배경 워터마크 스타일 */
+    .bg-watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 7vw;
+      font-weight: 900;
+      color: rgba(120, 53, 15, 0.025);
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 0;
+      user-select: none;
+    }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col select-none">
+
+  <!-- 은은한 배경 워터마크 -->
+  <div class="bg-watermark">© YAM'S NOTE - CAFE RECIPE PRO</div>
 
   <!-- 상단 헤더 -->
-  <header class="bg-amber-900 text-white shadow-md">
+  <header class="bg-amber-900 text-white shadow-md relative z-10">
     <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
         <div class="bg-amber-700 p-2.5 rounded-xl shadow-inner">
           <i class="fa-solid fa-mug-saucer text-2xl text-amber-200"></i>
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight">카페 원가 & 레시피 스마트 관리 시스템</h1>
-          <p class="text-xs text-amber-200">원재료명 입력칸 찌그러짐 방지 및 반응형 보완 완료</p>
+          <h1 class="text-xl font-bold tracking-tight">[얌의노트] 카페 원가 & 레시피 Pro</h1>
+          <p class="text-xs text-amber-200">스마트 원가 분석 및 배달 마진 통합 관리 시스템</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -76,7 +108,7 @@
   </div>
 
   <!-- 메인 컨텐츠 영역 -->
-  <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full relative z-10">
 
     <!-- TAB 1: 전체 레시피 한눈에 보기 -->
     <div id="view-recipes-view" class="tab-content space-y-6">
@@ -104,7 +136,7 @@
         <div class="flex items-center gap-2 w-full md:w-auto">
           <div class="relative w-full md:w-64">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-            <input type="text" id="recipe-search-kw" oninput="renderRecipesOverview()" placeholder="메뉴명 또는 재료명 검색..." class="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-amber-600">
+            <input type="text" id="recipe-search-kw" oninput="renderRecipesOverview()" placeholder="메뉴명 또는 재료명 검색..." class="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-amber-600 bg-white">
           </div>
           <button onclick="openNewRecipeModal()" class="bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1">
             <i class="fa-solid fa-plus"></i> 레시피 추가
@@ -128,11 +160,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label class="block text-xs font-bold text-slate-700 mb-1">메뉴명 *</label>
-              <input type="text" id="recipe-name" required placeholder="예: 카페라떼" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+              <input type="text" id="recipe-name" required placeholder="예: 카페라떼" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white">
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-700 mb-1">카테고리 *</label>
-              <select id="recipe-category" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+              <select id="recipe-category" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white">
                 <option value="커피">☕ 커피</option>
                 <option value="논커피">🥛 논커피</option>
                 <option value="디저트">🍰 디저트</option>
@@ -338,15 +370,15 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">비교할 메뉴 선택</label>
-            <select id="deliv-menu-select" onchange="onDeliveryMenuChange()" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg font-bold"></select>
+            <select id="deliv-menu-select" onchange="onDeliveryMenuChange()" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg font-bold bg-white"></select>
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">배달 판매가 (원)</label>
-            <input type="text" id="deliv-price" oninput="updateDeliveryCalc()" class="plus-shortcut w-full text-xs p-2.5 border border-slate-300 rounded-lg font-bold text-amber-900">
+            <input type="text" id="deliv-price" oninput="updateDeliveryCalc()" class="plus-shortcut w-full text-xs p-2.5 border border-slate-300 rounded-lg font-bold text-amber-900 bg-white">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">추가 포장비/부자재 (원)</label>
-            <input type="text" id="deliv-extra-pkg" value="200" oninput="updateDeliveryCalc()" class="plus-shortcut w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+            <input type="text" id="deliv-extra-pkg" value="200" oninput="updateDeliveryCalc()" class="plus-shortcut w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white">
           </div>
         </div>
         <p class="text-[11px] text-slate-500">* 각 플랫폼의 중개수수료, 기본 배달비, 결제정산수수료는 부가세 포함 기준으로 자동 계산됩니다.</p>
@@ -364,7 +396,7 @@
           </div>
           <div class="w-full md:w-64">
             <label class="block text-[11px] font-bold text-slate-600 mb-1">배달 플랫폼 선택</label>
-            <select id="order-platform" onchange="calculateOrderMargin()" class="w-full text-xs p-2 border border-slate-300 rounded-lg font-bold bg-slate-50">
+            <select id="order-platform" onchange="calculateOrderMargin()" class="w-full text-xs p-2 border border-slate-300 rounded-lg font-bold bg-white">
               <option value="baemin">배달의민족 (중개 6.8%, 배달 2,600원)</option>
               <option value="coupang">쿠팡이츠 (중개 7.8%, 배달 3,100원)</option>
               <option value="yogiyo">요기요 (중개 9.7%, 배달 2,900원)</option>
@@ -397,7 +429,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">추가 포장비 / 부자재비 (원)</label>
-            <input type="text" id="order-extra-pkg" value="200" oninput="calculateOrderMargin()" class="plus-shortcut w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+            <input type="text" id="order-extra-pkg" value="200" oninput="calculateOrderMargin()" class="plus-shortcut w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white">
           </div>
           <div class="md:col-span-2 bg-emerald-900 text-white p-4 rounded-xl flex flex-wrap justify-around items-center text-center gap-4">
             <div><p class="text-[11px] text-emerald-200">주문 총 결제금액</p><p class="text-base font-bold mt-0.5" id="order-total-price">0원</p></div>
@@ -434,6 +466,11 @@
 
   </main>
 
+  <!-- 하단 푸터 저작권 명시 -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 relative z-10">
+    <p>© 2026 [얌의노트] 카페 원가 & 레시피 Pro. All rights reserved. Unauthorized copying or redistribution is prohibited.</p>
+  </footer>
+
   <!-- 수제 베이스 / 서브 레시피 생성 및 편집 모달 -->
   <div id="sub-recipe-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -446,13 +483,13 @@
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div class="sm:col-span-2">
           <label class="block text-xs font-bold text-slate-700 mb-1">수제 베이스 명칭 *</label>
-          <input type="text" id="sub-name" placeholder="예: 수제 바닐라 시럽, 레몬청" class="w-full text-xs p-2 border border-slate-300 rounded-lg font-bold">
+          <input type="text" id="sub-name" placeholder="예: 수제 바닐라 시럽, 레몬청" class="w-full text-xs p-2 border border-slate-300 rounded-lg font-bold bg-white">
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">1회 제조 완성량 *</label>
           <div class="flex gap-1">
-            <input type="text" id="sub-output-capacity" placeholder="1550" class="plus-shortcut w-full text-xs p-2 border border-slate-300 rounded-lg font-bold text-right">
-            <select id="sub-unit" class="text-xs p-2 border border-slate-300 rounded-lg">
+            <input type="text" id="sub-output-capacity" placeholder="1550" class="plus-shortcut w-full text-xs p-2 border border-slate-300 rounded-lg font-bold text-right bg-white">
+            <select id="sub-unit" class="text-xs p-2 border border-slate-300 rounded-lg bg-white">
               <option value="g">g</option>
               <option value="ml">ml</option>
               <option value="개">개</option>
@@ -498,7 +535,7 @@
   </div>
 
   <script>
-    // 우클릭, 드래그, 개발자 도구 차단 스크립트
+    // 💡 보안 및 무단 복제·저장 방지 스크립트 강화
     document.addEventListener('contextmenu', function(e) {
       e.preventDefault();
     });
@@ -509,11 +546,17 @@
       }
     });
 
+    document.addEventListener('copy', function(e) {
+      if (!e.target.matches('input, textarea')) {
+        e.preventDefault();
+      }
+    });
+
     document.addEventListener('keydown', function(e) {
       if (
         e.key === 'F12' || 
         (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
-        (e.ctrlKey && e.key === 'U')
+        (e.ctrlKey && (e.key === 'U' || e.key === 'S' || e.key === 'P' || e.key === 'A'))
       ) {
         e.preventDefault();
         alert('이 페이지에서는 해당 기능을 사용할 수 없습니다.');
@@ -909,19 +952,19 @@
           if(!itemInfo) return;
           const lineCost = Math.round(itemInfo.unitCost * item.amount);
           
-          let badgeClass = 'bg-amber-50 text-amber-800 border border-amber-200';
-          if(itemInfo.type === '부자재') badgeClass = 'bg-purple-50 text-purple-700 border border-purple-200';
-          if(itemInfo.type === '수제베이스') badgeClass = 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold';
-          if(itemInfo.type === '단품메뉴') badgeClass = 'bg-sky-100 text-sky-900 border border-sky-300 font-extrabold';
+          let badgeClass = 'badge-fixed bg-amber-50 text-amber-800 border border-amber-200 text-[10px] px-1.5 py-1 rounded font-bold';
+          if(itemInfo.type === '부자재') badgeClass = 'badge-fixed bg-purple-50 text-purple-700 border border-purple-200 text-[10px] px-1.5 py-1 rounded font-bold';
+          if(itemInfo.type === '수제베이스') badgeClass = 'badge-fixed bg-amber-100 text-amber-900 border border-amber-300 text-[10px] px-1.5 py-1 rounded font-extrabold';
+          if(itemInfo.type === '단품메뉴') badgeClass = 'badge-fixed bg-sky-100 text-sky-900 border border-sky-300 text-[10px] px-1.5 py-1 rounded font-extrabold';
 
           itemsHtml += `
             <div class="flex justify-between items-center py-2 border-b border-slate-100 text-xs gap-2">
               <div class="flex items-center gap-2 min-w-0 flex-grow">
-                <span class="text-[10px] px-1.5 py-1 rounded w-14 text-center shrink-0 ${badgeClass}">${itemInfo.type}</span>
+                <span class="${badgeClass}">${itemInfo.type}</span>
                 <span class="font-medium text-slate-800 break-words leading-tight">${itemInfo.name} ${itemInfo.vendor ? `<span class="text-[10px] text-slate-400 font-normal">(${itemInfo.vendor})</span>` : ''}</span>
               </div>
               <div class="flex items-center gap-2 shrink-0">
-                <input type="text" data-type="numeric" value="${item.amount}" onchange="quickUpdateAmount('${m.id}', ${iIdx}, this.value)" class="plus-shortcut w-14 text-right border border-slate-300 rounded px-1 py-0.5 text-xs font-bold">
+                <input type="text" data-type="numeric" value="${item.amount}" onchange="quickUpdateAmount('${m.id}', ${iIdx}, this.value)" class="plus-shortcut w-14 text-right border border-slate-300 rounded px-1 py-0.5 text-xs font-bold bg-white">
                 <span class="text-[11px] text-slate-500 w-6">${itemInfo.unit}</span>
                 <span class="font-bold text-slate-700 text-right w-16">${lineCost.toLocaleString()}원</span>
               </div>
@@ -955,11 +998,11 @@
             <div class="grid grid-cols-2 gap-2 text-xs pb-2 border-b border-slate-200">
               <div class="flex justify-between items-center bg-amber-50/50 p-1.5 rounded border border-amber-200">
                 <span class="font-bold text-amber-900 text-[11px]">🏪 매장가:</span>
-                <input type="text" value="${m.price}" onchange="quickUpdatePrice('${m.id}', 'price', this.value)" class="plus-shortcut w-16 text-right font-extrabold text-amber-900 border border-amber-300 rounded px-1 py-0.5 text-[11px]">
+                <input type="text" value="${m.price}" onchange="quickUpdatePrice('${m.id}', 'price', this.value)" class="plus-shortcut w-16 text-right font-extrabold text-amber-900 border border-amber-300 rounded px-1 py-0.5 text-[11px] bg-white">
               </div>
               <div class="flex justify-between items-center bg-sky-50/50 p-1.5 rounded border border-sky-200">
                 <span class="font-bold text-sky-900 text-[11px]">🛵 배달가:</span>
-                <input type="text" value="${m.deliveryPrice}" onchange="quickUpdatePrice('${m.id}', 'deliveryPrice', this.value)" class="plus-shortcut w-16 text-right font-extrabold text-sky-900 border border-sky-300 rounded px-1 py-0.5 text-[11px]">
+                <input type="text" value="${m.deliveryPrice}" onchange="quickUpdatePrice('${m.id}', 'deliveryPrice', this.value)" class="plus-shortcut w-16 text-right font-extrabold text-sky-900 border border-sky-300 rounded px-1 py-0.5 text-[11px] bg-white">
               </div>
             </div>
           `;
@@ -1097,24 +1140,24 @@
         tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
         tr.innerHTML = `
           <td class="p-2">
-            <select onchange="updateIngField('${ing.id}', 'type', this.value)" class="w-full text-xs p-1 border border-slate-300 rounded font-bold ${ing.type === '부자재' ? 'text-purple-700':'text-amber-800'}">
+            <select onchange="updateIngField('${ing.id}', 'type', this.value)" class="w-full text-xs p-1 border border-slate-300 rounded font-bold bg-white ${ing.type === '부자재' ? 'text-purple-700':'text-amber-800'}">
               <option value="원재료" ${ing.type === '원재료' ? 'selected':''}>원재료</option>
               <option value="부자재" ${ing.type === '부자재' ? 'selected':''}>부자재</option>
             </select>
           </td>
-          <td class="p-2 min-w-[160px]"><input type="text" value="${ing.name}" onchange="updateIngField('${ing.id}', 'name', this.value)" class="w-full min-w-[150px] text-xs p-1 border border-slate-300 rounded font-bold text-slate-800"></td>
-          <td class="p-2"><input type="text" value="${ing.vendor || ''}" placeholder="구매처 입력" onchange="updateIngField('${ing.id}', 'vendor', this.value)" class="w-full text-xs p-1 border border-slate-300 rounded text-slate-600"></td>
-          <td class="p-2 text-right"><input type="text" value="${ing.price}" onchange="updateIngField('${ing.id}', 'price', this.value)" class="plus-shortcut w-full text-xs p-1 text-right border border-slate-300 rounded font-bold"></td>
-          <td class="p-2 text-right"><input type="text" value="${ing.capacity}" onchange="updateIngField('${ing.id}', 'capacity', this.value)" class="plus-shortcut w-full text-xs p-1 text-right border border-slate-300 rounded"></td>
+          <td class="p-2 min-w-[160px]"><input type="text" value="${ing.name}" onchange="updateIngField('${ing.id}', 'name', this.value)" class="w-full min-w-[150px] text-xs p-1 border border-slate-300 rounded font-bold text-slate-800 bg-white"></td>
+          <td class="p-2"><input type="text" value="${ing.vendor || ''}" placeholder="구매처 입력" onchange="updateIngField('${ing.id}', 'vendor', this.value)" class="w-full text-xs p-1 border border-slate-300 rounded text-slate-600 bg-white"></td>
+          <td class="p-2 text-right"><input type="text" value="${ing.price}" onchange="updateIngField('${ing.id}', 'price', this.value)" class="plus-shortcut w-full text-xs p-1 text-right border border-slate-300 rounded font-bold bg-white"></td>
+          <td class="p-2 text-right"><input type="text" value="${ing.capacity}" onchange="updateIngField('${ing.id}', 'capacity', this.value)" class="plus-shortcut w-full text-xs p-1 text-right border border-slate-300 rounded bg-white"></td>
           <td class="p-2">
-            <select onchange="updateIngField('${ing.id}', 'unit', this.value)" class="w-full text-xs p-1 border border-slate-300 rounded">
+            <select onchange="updateIngField('${ing.id}', 'unit', this.value)" class="w-full text-xs p-1 border border-slate-300 rounded bg-white">
               <option value="g" ${ing.unit === 'g' ? 'selected':''}>g</option>
               <option value="ml" ${ing.unit === 'ml' ? 'selected':''}>ml</option>
               <option value="개" ${ing.unit === '개' ? 'selected':''}>개</option>
               <option value="장" ${ing.unit === '장' ? 'selected':''}>장</option>
             </select>
           </td>
-          <td class="p-2 text-right"><input type="text" value="${ing.yieldPct}" onchange="updateIngField('${ing.id}', 'yieldPct', this.value)" class="plus-shortcut w-full text-xs p-1 text-right border border-slate-300 rounded"></td>
+          <td class="p-2 text-right"><input type="text" value="${ing.yieldPct}" onchange="updateIngField('${ing.id}', 'yieldPct', this.value)" class="plus-shortcut w-full text-xs p-1 text-right border border-slate-300 rounded bg-white"></td>
           <td class="p-2 text-right font-bold text-amber-900">${unitCost.toFixed(2)}원 / ${ing.unit}</td>
           <td class="p-2 text-center">
             <button onclick="deleteIngredient('${ing.id}')" class="text-red-500 hover:bg-red-50 p-1.5 rounded" title="삭제"><i class="fa-solid fa-trash"></i></button>
@@ -1131,27 +1174,27 @@
       tr.id = 'new-ing-row';
       tr.innerHTML = `
         <td class="p-2">
-          <select id="new-ing-type" class="w-full text-xs p-1 border border-amber-400 rounded font-bold text-amber-900">
+          <select id="new-ing-type" class="w-full text-xs p-1 border border-amber-400 rounded font-bold text-amber-900 bg-white">
             <option value="원재료">원재료</option>
             <option value="부자재">부자재</option>
           </select>
         </td>
         <td class="p-2 min-w-[160px] relative">
-          <input type="text" id="new-ing-name" placeholder="새 재료/부자재명 *" oninput="handleNewIngInput(this)" onkeydown="handleNewIngKeydown(event, this)" onfocus="handleNewIngInput(this)" class="w-full min-w-[150px] text-xs p-1 border border-amber-400 rounded font-bold">
+          <input type="text" id="new-ing-name" placeholder="새 재료/부자재명 *" oninput="handleNewIngInput(this)" onkeydown="handleNewIngKeydown(event, this)" onfocus="handleNewIngInput(this)" class="w-full min-w-[150px] text-xs p-1 border border-amber-400 rounded font-bold bg-white">
           <div id="new-ing-dropdown" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 max-h-40 overflow-y-auto"></div>
         </td>
-        <td class="p-2"><input type="text" id="new-ing-vendor" placeholder="구매처" class="w-full text-xs p-1 border border-amber-400 rounded"></td>
-        <td class="p-2"><input type="text" id="new-ing-price" placeholder="금액 *" class="plus-shortcut w-full text-xs p-1 text-right border border-amber-400 rounded font-bold"></td>
-        <td class="p-2"><input type="text" id="new-ing-capacity" placeholder="용량 *" class="plus-shortcut w-full text-xs p-1 text-right border border-amber-400 rounded"></td>
+        <td class="p-2"><input type="text" id="new-ing-vendor" placeholder="구매처" class="w-full text-xs p-1 border border-amber-400 rounded bg-white"></td>
+        <td class="p-2"><input type="text" id="new-ing-price" placeholder="금액 *" class="plus-shortcut w-full text-xs p-1 text-right border border-amber-400 rounded font-bold bg-white"></td>
+        <td class="p-2"><input type="text" id="new-ing-capacity" placeholder="용량 *" class="plus-shortcut w-full text-xs p-1 text-right border border-amber-400 rounded bg-white"></td>
         <td class="p-2">
-          <select id="new-ing-unit" class="w-full text-xs p-1 border border-amber-400 rounded">
+          <select id="new-ing-unit" class="w-full text-xs p-1 border border-amber-400 rounded bg-white">
             <option value="g">g</option>
             <option value="ml">ml</option>
             <option value="개">개</option>
             <option value="장">장</option>
           </select>
         </td>
-        <td class="p-2"><input type="text" id="new-ing-yield" value="100" class="plus-shortcut w-full text-xs p-1 text-right border border-amber-400 rounded"></td>
+        <td class="p-2"><input type="text" id="new-ing-yield" value="100" class="plus-shortcut w-full text-xs p-1 text-right border border-amber-400 rounded bg-white"></td>
         <td class="p-2 text-center text-slate-400 text-[11px]">입력 후 저장</td>
         <td class="p-2 text-center space-x-1">
           <button onclick="saveNewIngRow()" class="bg-amber-800 text-white px-2 py-1 rounded text-xs font-bold hover:bg-amber-900">저장</button>
@@ -1350,12 +1393,12 @@
       tr.innerHTML = `
         <td class="py-1.5 px-1 relative">
           <input type="hidden" class="sub-ing-id" value="${selectedIngId}">
-          <input type="text" class="sub-ing-search w-full text-xs p-1.5 border border-slate-300 rounded font-medium" value="${ing ? ing.name : ''}" placeholder="원재료 검색 (방향키/엔터)..." oninput="handleSubIngInput(this)" onkeydown="handleSubIngKeydown(event, this)" onfocus="handleSubIngInput(this)">
+          <input type="text" class="sub-ing-search w-full text-xs p-1.5 border border-slate-300 rounded font-medium bg-white" value="${ing ? ing.name : ''}" placeholder="원재료 검색 (방향키/엔터)..." oninput="handleSubIngInput(this)" onkeydown="handleSubIngKeydown(event, this)" onfocus="handleSubIngInput(this)">
           <div class="sub-ing-dropdown hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 max-h-40 overflow-y-auto"></div>
         </td>
         <td class="py-1.5 px-1">
           <div class="flex items-center gap-1">
-            <input type="text" value="${amount}" oninput="calculateSubRecipeModalTotals()" class="plus-shortcut sub-ing-amount w-full text-xs p-1.5 text-right border border-slate-300 rounded font-bold">
+            <input type="text" value="${amount}" oninput="calculateSubRecipeModalTotals()" class="plus-shortcut sub-ing-amount w-full text-xs p-1.5 text-right border border-slate-300 rounded font-bold bg-white">
             <span class="sub-ing-unit text-[10px] text-slate-500 w-4">${ing ? ing.unit : 'g'}</span>
           </div>
         </td>
@@ -1544,27 +1587,27 @@
       tr.className = 'batch-row border-b border-emerald-200 relative';
       tr.innerHTML = `
         <td class="p-2">
-          <select class="batch-type w-full text-xs p-1 border border-emerald-300 rounded font-bold text-emerald-900">
+          <select class="batch-type w-full text-xs p-1 border border-emerald-300 rounded font-bold text-emerald-900 bg-white">
             <option value="원재료">원재료</option>
             <option value="부자재">부자재</option>
           </select>
         </td>
         <td class="p-2 min-w-[160px] relative">
-          <input type="text" placeholder="항목명 *" oninput="handleBatchIngInput(this)" onkeydown="handleBatchIngKeydown(event, this)" onfocus="handleBatchIngInput(this)" class="batch-name w-full min-w-[150px] text-xs p-1 border border-emerald-300 rounded font-bold">
+          <input type="text" placeholder="항목명 *" oninput="handleBatchIngInput(this)" onkeydown="handleBatchIngKeydown(event, this)" onfocus="handleBatchIngInput(this)" class="batch-name w-full min-w-[150px] text-xs p-1 border border-emerald-300 rounded font-bold bg-white">
           <div class="batch-dropdown hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 max-h-40 overflow-y-auto"></div>
         </td>
-        <td class="p-2"><input type="text" placeholder="구매처" class="batch-vendor w-full text-xs p-1 border border-emerald-300 rounded"></td>
-        <td class="p-2 text-right"><input type="text" placeholder="금액 *" class="plus-shortcut batch-price w-full text-xs p-1 text-right border border-emerald-300 rounded font-bold"></td>
-        <td class="p-2 text-right"><input type="text" placeholder="용량 *" class="plus-shortcut batch-capacity w-full text-xs p-1 text-right border border-emerald-300 rounded"></td>
+        <td class="p-2"><input type="text" placeholder="구매처" class="batch-vendor w-full text-xs p-1 border border-emerald-300 rounded bg-white"></td>
+        <td class="p-2 text-right"><input type="text" placeholder="금액 *" class="plus-shortcut batch-price w-full text-xs p-1 text-right border border-emerald-300 rounded font-bold bg-white"></td>
+        <td class="p-2 text-right"><input type="text" placeholder="용량 *" class="plus-shortcut batch-capacity w-full text-xs p-1 text-right border border-emerald-300 rounded bg-white"></td>
         <td class="p-2">
-          <select class="batch-unit w-full text-xs p-1 border border-emerald-300 rounded">
+          <select class="batch-unit w-full text-xs p-1 border border-emerald-300 rounded bg-white">
             <option value="g">g</option>
             <option value="ml">ml</option>
             <option value="개">개</option>
             <option value="장">장</option>
           </select>
         </td>
-        <td class="p-2 text-right"><input type="text" value="100" class="plus-shortcut batch-yield w-full text-xs p-1 text-right border border-emerald-300 rounded"></td>
+        <td class="p-2 text-right"><input type="text" value="100" class="plus-shortcut batch-yield w-full text-xs p-1 text-right border border-emerald-300 rounded bg-white"></td>
         <td class="p-2 text-center"><button type="button" onclick="this.closest('tr').remove()" class="text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-xmark"></i></button></td>
       `;
       tbody.appendChild(tr);
@@ -1876,14 +1919,21 @@
 
       const itemInfo = getItemInfo(selectedIngId);
 
+      let typeBadgeClass = 'badge-fixed text-[10px] px-1.5 py-0.5 rounded bg-slate-100';
+      if (itemInfo && itemInfo.type === '수제베이스') {
+        typeBadgeClass = 'badge-fixed text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-extrabold';
+      } else if (itemInfo && itemInfo.type === '단품메뉴') {
+        typeBadgeClass = 'badge-fixed text-[10px] px-1.5 py-0.5 rounded bg-sky-100 text-sky-900 border border-sky-300 font-extrabold';
+      }
+
       tr.innerHTML = `
         <td class="py-2 px-1 relative">
           <input type="hidden" class="ing-id-hidden" value="${selectedIngId}">
-          <input type="text" class="ing-search-input w-full text-xs p-2 border border-slate-300 rounded-lg font-medium" value="${itemInfo ? itemInfo.name : ''}" placeholder="원재료/부자재/수제베이스/단품메뉴 타이핑..." oninput="handleIngInput(this)" onkeydown="handleIngKeydown(event, this)" onfocus="handleIngInput(this)">
+          <input type="text" class="ing-search-input w-full text-xs p-2 border border-slate-300 rounded-lg font-medium bg-white" value="${itemInfo ? itemInfo.name : ''}" placeholder="원재료/부자재/수제베이스/단품메뉴 타이핑..." oninput="handleIngInput(this)" onkeydown="handleIngKeydown(event, this)" onfocus="handleIngInput(this)">
           <div class="ing-dropdown-results hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 max-h-40 overflow-y-auto"></div>
         </td>
-        <td class="py-2 px-1 text-center"><span class="ing-type-label text-[10px] px-1.5 py-0.5 rounded ${itemInfo && itemInfo.type === '수제베이스' ? 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold' : itemInfo && itemInfo.type === '단품메뉴' ? 'bg-sky-100 text-sky-900 border border-sky-300 font-extrabold' : 'bg-slate-100'}">${itemInfo ? itemInfo.type : '-'}</span></td>
-        <td class="py-2 px-1"><input type="text" data-type="numeric" value="${amount}" oninput="calculateRecipeTotals()" placeholder="0" class="plus-shortcut ing-amount w-full text-xs p-2 border border-slate-300 rounded-lg font-bold"></td>
+        <td class="py-2 px-1 text-center"><span class="ing-type-label ${typeBadgeClass}">${itemInfo ? itemInfo.type : '-'}</span></td>
+        <td class="py-2 px-1"><input type="text" data-type="numeric" value="${amount}" oninput="calculateRecipeTotals()" placeholder="0" class="plus-shortcut ing-amount w-full text-xs p-2 border border-slate-300 rounded-lg font-bold bg-white"></td>
         <td class="py-2 px-1 text-center ing-unit-label text-slate-500">${itemInfo ? itemInfo.unit : '-'}</td>
         <td class="py-2 px-1 text-right font-bold text-slate-700 ing-cost-calculated">0원</td>
         <td class="py-2 px-1 text-center"><button type="button" onclick="removeRecipeRow(this)" class="text-red-400 p-1"><i class="fa-solid fa-xmark"></i></button></td>
@@ -1966,11 +2016,11 @@
       const typeLabel = row.querySelector('.ing-type-label');
       typeLabel.innerText = item.type;
       if(item.type === '수제베이스') {
-        typeLabel.className = 'ing-type-label text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-extrabold';
+        typeLabel.className = 'ing-type-label badge-fixed text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-extrabold';
       } else if(item.type === '단품메뉴') {
-        typeLabel.className = 'ing-type-label text-[10px] px-1.5 py-0.5 rounded bg-sky-100 text-sky-900 border border-sky-300 font-extrabold';
+        typeLabel.className = 'ing-type-label badge-fixed text-[10px] px-1.5 py-0.5 rounded bg-sky-100 text-sky-900 border border-sky-300 font-extrabold';
       } else {
-        typeLabel.className = 'ing-type-label text-[10px] px-1.5 py-0.5 rounded bg-slate-100';
+        typeLabel.className = 'ing-type-label badge-fixed text-[10px] px-1.5 py-0.5 rounded bg-slate-100';
       }
 
       row.querySelector('.ing-unit-label').innerText = item.unit;
@@ -2158,10 +2208,10 @@
 
       tr.innerHTML = `
         <td class="p-2">
-          <select onchange="calculateOrderMargin()" class="order-menu-select w-full text-xs p-2 border border-slate-300 rounded-lg font-bold">${optionsHtml}</select>
+          <select onchange="calculateOrderMargin()" class="order-menu-select w-full text-xs p-2 border border-slate-300 rounded-lg font-bold bg-white">${optionsHtml}</select>
         </td>
         <td class="p-2 text-center">
-          <input type="text" value="${qty}" oninput="calculateOrderMargin()" class="plus-shortcut order-qty w-16 text-center text-xs p-2 border border-slate-300 rounded-lg font-bold">
+          <input type="text" value="${qty}" oninput="calculateOrderMargin()" class="plus-shortcut order-qty w-16 text-center text-xs p-2 border border-slate-300 rounded-lg font-bold bg-white">
         </td>
         <td class="p-2 text-right order-unit-price font-bold text-amber-900">0원</td>
         <td class="p-2 text-right order-line-total font-bold text-slate-800">0원</td>
@@ -2283,7 +2333,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cafe_recipe_data_${new Date().toISOString().slice(0,10)}.csv`;
+      a.download = `yam_cafe_recipe_data_${new Date().toISOString().slice(0,10)}.csv`;
       a.click();
     }
 
@@ -2293,7 +2343,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cafe_recipe_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.download = `yam_cafe_recipe_backup_${new Date().toISOString().slice(0,10)}.json`;
       a.click();
     }
 
